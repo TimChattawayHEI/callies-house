@@ -1235,7 +1235,7 @@ function App() {
   } else if (aspect < 1.05 && !build) { const nw = vw * (aspect < 0.7 ? 0.64 : 0.8), nh = Math.min(vh, nw / aspect); const fp = P(c.x, c.y, c.z); vx = clamp(fp[0] - nw / 2, vx, vx + vw - nw); vy = vy + (vh - nh) * 0.5; vw = nw; vh = nh; }
   // big places: only draw what the camera can see
   const vis = r => !L.live || !r || (r[1] > vx - 150 && r[0] < vx + vw + 150 && r[3] > vy - 150 && r[2] < vy + vh + 300);
-  const furn = L.items.filter(i => i.kind === 'furn').map((i, k) => (vis(i.sr) ? { key: i.key, sort: i.sort, sr: i.sr, ok: k, el: wrap(i) } : null)).filter(Boolean);
+  const furn = L.items.filter(i => i.kind === 'furn').map((i, k) => (vis(i.sr) ? { key: i.key, sort: i.sort, sr: i.sr, bb: i.bb, ok: k, el: wrap(i) } : null)).filter(Boolean);
   const frontEls = L.items.filter(i => i.kind === 'front').map(wrap);
   const overlayEls = L.items.filter(i => i.kind === 'overlay').map(wrap);
   const dyn = [...ov.sorted];

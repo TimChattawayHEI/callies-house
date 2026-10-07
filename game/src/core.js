@@ -140,29 +140,45 @@ export function depthSortLoose(furn, dyn, furnEdges) {
   for (let i = 0; i < n; i++) if (!seen[i]) order.push(i);
   return order.map(i => nodes[i]);
 }
+// Is something standing at (x, y) in front of a piece of furniture? Things inside its footprint count as
+// in front (sitting on a sofa, lying on a bed). Off a back corner, whichever is nearer the viewer wins.
+export function inFront(x, y, [x0, x1, y0, y1]) {
+  if (x > x0 && x < x1 && y > y0 && y < y1) return true;
+  if (x >= x1 && y >= y0) return true;
+  if (y >= y1 && x >= x0) return true;
+  if (x >= x1) return x + y > x1 + y0;
+  if (y >= y1) return x + y > x0 + y1;
+  return false;
+}
+// Rooms: the furniture keeps its art order, and each person or thing is slotted into that order at the place
+// that breaks the fewest in-front/behind rules, counting only furniture it could overlap on screen.
+// (Slotting never fails, so nobody ends up drawn on top of everything when the rules disagree.)
 export function depthSort(furn, dyn) {
-  const nodes = [...furn.map(f => ({ ...f, isF: true })), ...dyn.map(d => ({ ...d, isF: false }))];
-  const n = nodes.length, out = Array.from({ length: n }, () => []), indeg = new Array(n).fill(0);
-  const edge = (a, b) => { out[a].push(b); indeg[b]++; };
-  for (let i = 0; i + 1 < furn.length; i++) edge(i, i + 1);
-  for (let fi = 0; fi < furn.length; fi++) {
-    const [x0, x1, y0, y1] = furn[fi].sort;
-    for (let di = furn.length; di < n; di++) {
-      const { x, y } = nodes[di];
-      const within = x > x0 && x < x1 && y > y0 && y < y1;
-      if (within || x >= x1 || y >= y1) edge(fi, di); else edge(di, fi);
+  const n = furn.length;
+  const fr = furn.map(f => f.sr || screenRect(f.sort, 0, f.bb ? f.bb[5] : 2.8));
+  const depth = d => d.x + d.y + (d.z || 0) * 0.01;
+  const ds = [...dyn].sort((a, b) => depth(a) - depth(b));
+  let prev = 0;
+  const slot = new Map();
+  for (const d of ds) {
+    const [sx, sy] = P(d.x, d.y, d.z || 0), r = d.sr || [sx - 32, sx + 32, sy - 215, sy + 15];
+    const cost = new Array(n + 1).fill(0);
+    for (let i = 0; i < n; i++) {
+      if (!hitRect(fr[i], r)) continue;
+      if (inFront(d.x, d.y, furn[i].sort)) { for (let k = 0; k <= i; k++) cost[k]++; } else { for (let k = i + 1; k <= n; k++) cost[k]++; }
     }
+    const best = Math.min(...cost);
+    // the cheapest run of slots; stay as late as the last placed thing when we can, so nearer things draw later
+    let lo = cost.indexOf(best), hi = lo; while (hi + 1 <= n && cost[hi + 1] === best) hi++;
+    const k = prev >= lo && prev <= hi ? prev : prev < lo ? lo : (cost[prev] === best ? prev : lo);
+    slot.set(d, k); prev = Math.max(prev, k);
   }
-  const depth = nd => (nd.isF ? -1 : nd.x + nd.y + (nd.z || 0) * 0.01);
-  const ready = []; for (let i = 0; i < n; i++) if (!indeg[i]) ready.push(i);
-  const order = [], seen = new Uint8Array(n);
-  while (ready.length) {
-    let bi = 0; for (let k = 1; k < ready.length; k++) if (depth(nodes[ready[k]]) < depth(nodes[ready[bi]])) bi = k;
-    const i = ready.splice(bi, 1)[0]; order.push(i); seen[i] = 1;
-    for (const j of out[i]) if (--indeg[j] === 0) ready.push(j);
+  const out = [];
+  for (let k = 0; k <= n; k++) {
+    for (const d of ds) if (slot.get(d) === k) out.push({ ...d, isF: false });
+    if (k < n) out.push({ ...furn[k], isF: true });
   }
-  for (let i = 0; i < n; i++) if (!seen[i]) order.push(i);
-  return order.map(i => nodes[i]);
+  return out;
 }
 
 /* ---------------- sound effects ---------------- */
