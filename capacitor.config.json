@@ -1,0 +1,9 @@
+{
+  "appId": "app.callieshouse.game",
+  "appName": "Callie's House",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#efe2d0",
+    "allowMixedContent": false
+  }
+}

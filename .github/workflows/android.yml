@@ -1,0 +1,79 @@
+# Builds the Android app on every push to main (or by hand from the Actions tab).
+# The APK lands on the "latest" release, ready to download and install on the tablet.
+name: Build Android app
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install packages
+        run: npm install --no-audit --no-fund
+
+      - name: Build the game into www/
+        run: python3 scripts/build_app.py
+
+      - name: Make the Android project
+        run: npx cap add android
+
+      - name: App icon and splash screen
+        run: npx capacitor-assets generate --android
+
+      - name: Copy the game into the Android project
+        run: npx cap sync android
+
+      - name: Version number
+        run: |
+          sed -i "s/versionCode [0-9]*/versionCode ${{ github.run_number }}/" android/app/build.gradle
+          sed -i "s/versionName \"[^\"]*\"/versionName \"1.0.${{ github.run_number }}\"/" android/app/build.gradle
+
+      # Signed with the same key every time, so updates install over the top and keep her progress.
+      - name: Build the APK
+        working-directory: android
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        run: |
+          if [ -n "$KEYSTORE_PASSWORD" ]; then
+            ./gradlew assembleRelease --no-daemon \
+              -Pandroid.injected.signing.store.file="$GITHUB_WORKSPACE/keys/callies-house.keystore" \
+              -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
+              -Pandroid.injected.signing.key.alias=callies-house \
+              -Pandroid.injected.signing.key.password="$KEYSTORE_PASSWORD"
+            cp app/build/outputs/apk/release/app-release.apk "$GITHUB_WORKSPACE/callies-house-1.0.${{ github.run_number }}.apk"
+          else
+            echo "::warning::KEYSTORE_PASSWORD secret is not set, so this is a debug build. Debug builds cannot update each other; add the secret."
+            ./gradlew assembleDebug --no-daemon
+            cp app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/callies-house-1.0.${{ github.run_number }}-debug.apk"
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: callies-house-apk
+          path: callies-house-*.apk
+
+      - name: Put it on the latest release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete latest --yes --cleanup-tag || true
+          gh release create latest callies-house-*.apk \
+            --title "Callie's House 1.0.${{ github.run_number }}" \
+            --notes "Download the APK on the tablet and open it to install or update. Her progress is kept."
