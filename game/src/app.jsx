@@ -13,6 +13,7 @@ import { BookReader, storyFor, STORIES } from './books.jsx';
 import { initQuests, stepQuests, QUESTS, completeQuest, startHide, hideHint, foundHider, stepHide, gather, releaseAll, startDance, startBbq, endBbq, toggleGoal, kickBall, stepFootball, GOAL, connorOut } from './fun.js';
 import { MagnetPanel, freshMagnets, MAG_KEY, BurgerPanel, Album, PHOTO_KEY, PersonMenu } from './funui.jsx';
 import { Iso } from '../rooms.gen.jsx';
+import { Splash } from './splash.jsx';
 import { Person, CallieLying, DEFAULT_OUTFITS, OPTIONS, LABELS, NAMES, HeadIcon, BODY, Accessory, Rosette, Specs } from './people.jsx';
 import { ItemArt, ItemIcon, KINDS, HUNT_ORDER, Sandwich } from './items.jsx';
 import { ROOMS, DOORMAP, WORDS, TOWN_WORDS, CONTAINERS, containerFor, roomLayers, liveLayers, TOWN, CALLIE_FOOT, startItems } from './rooms.jsx';
@@ -180,6 +181,7 @@ function App() {
   const setMagnets = fn => setMagnetsRaw(m => { const n = typeof fn === 'function' ? fn(m) : fn; store(MAG_KEY, n); return n; });
   const [photos, setPhotos] = useState(() => load(PHOTO_KEY) || []);
   const [pmenu, setPmenu] = useState(null);
+  const [splash, setSplash] = useState(() => { const on = !window.__DEBUG || !!window.__SPLASH; window.__splashing = on; return on; }); // the opening animation
   const [build, setBuild] = useState(null); // decorating a New Street room: { rid, fam, rk, tab, cat, sel, saved }
   const [, setFrame] = useState(0);
   const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight });
@@ -254,7 +256,7 @@ function App() {
     let raf, last = 0;
     let skip = 0;
     // big town places draw at most 30 times a second so slower tablets keep up
-    const loop = now => { if (!last) last = now; const dt = Math.min(0.05, (now - last) / 1000); last = now; tickRef.current(dt); const town = ROOMS[W.room] && ROOMS[W.room].town; if (!town || (skip = 1 - skip)) setFrame(f => (f + 1) % 1e6); raf = requestAnimationFrame(loop); };
+    const loop = now => { if (window.__splashing) { last = 0; raf = requestAnimationFrame(loop); return; } if (!last) last = now; const dt = Math.min(0.05, (now - last) / 1000); last = now; tickRef.current(dt); const town = ROOMS[W.room] && ROOMS[W.room].town; if (!town || (skip = 1 - skip)) setFrame(f => (f + 1) % 1e6); raf = requestAnimationFrame(loop); };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
   }, []);
@@ -1406,6 +1408,7 @@ function App() {
     {hint && !panel && <div className="hint">Tap to walk. Tap things to hear their names. Tap the door signs to go to other rooms.</div>}
     {toast && <div className="toast">{toast}</div>}
     {stickerPop && STICKER[stickerPop.id] && <button key={stickerPop.t} className="sticker-pop" onPointerDown={e => e.stopPropagation()} onClick={() => openJobs('stickers')}><JobIcon kind={STICKER[stickerPop.id].icon} size={46} /><span><small>New sticker!</small><b>{STICKER[stickerPop.id].title}</b></span></button>}
+    {splash && <Splash onStart={() => { window.__splashing = false; setSplash(false); AUDIO.unlocked = true; audio(); SFX.sparkle(); later(W, 0.4, () => speak("Welcome to Callie's House!", 'narrator')); }} />}
     {build && W.folk.fams[build.fam] && <BuildPanel W={W} fam={W.folk.fams[build.fam]} rk={build.rk} b={build} coins={W.coins} onGoRoom={buildGo} onNewLayout={buildNewLayout}
       onWallSide={v => patchBuild({ wallSide: v })} onRugPick={() => { patchBuild({ sel: 'rug' }); SFX.pop(); }}
       onRugSize={(k, turn) => { const f = buildFam(); setStyle({ rugAt: rugSized(geoOf(f, build.rk), f.rooms[build.rk].style, k, turn) }); patchBuild({ sel: 'rug' }); }}
