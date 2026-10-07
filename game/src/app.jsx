@@ -23,6 +23,8 @@ import { MenuPanel, CAFE_MENU, LUNCH_MENU, IceCreamPanel, SECTIONS, GROC, newLis
 import { grandsArrive, stepGrands, GRAND_HUGS } from './grand.js';
 import { TownMap, PLACES, pickParty, homeNow, arriveAt, stepCompanion, compLine } from './town.jsx';
 import { initAsks, stepAsks, ducksFed, schoolReady, schoolDone, dressed, KIDS } from './asks.js';
+import { initErrands, stepErrands, errandTap, errandGive } from './errands.js';
+import { initEncounters, stepCritters, tapCritter, CritterArt, stepPost, readLetter, LetterArt, LetterPanel, stepVisit } from './encounters.jsx';
 import { initXmas, resetXmas, stepXmas, decorateXmas, isChristmas, TreePanel, TREE_AT } from './christmas.jsx';
 import { initHalloween, resetHalloween, stepHalloween, decorate, isHalloween, seasonOf, SEASON_LABEL, SEASON_CYCLE, PumpkinPanel } from './halloween.jsx';
 
@@ -154,6 +156,8 @@ function App() {
   if (!W.hw) initHalloween(W, saved);
   if (!W.ach) W.ach = (saved && saved.ach) || {};
   if (!W.asks) initAsks(W, saved);
+  if (W.errN == null) initErrands(W, saved);
+  if (!W.critters) initEncounters(W, saved);
   if (!W.folk) initFolk(W, saved);
   if (W.clock == null) initSky(W, saved);
   if (W.coins == null) W.coins = saved && saved.coins != null ? saved.coins : 60;
@@ -192,7 +196,7 @@ function App() {
   const c = player(W);
   const me = c.id;
   window.__back = () => { if (build) endBuild(); else if (panel) { if (panel.kind === 'book') closeBook(); else setPanel(null); } else if (pmenu) setPmenu(null); else if (menu) setMenu(false); else if (packOpen) setPackOpen(false); else if (sel) setSel(null); };
-  if (window.__DEBUG) { window.__W = W; window.__tap = (h, pt) => onTap(h, pt || [960, 540]); window.__switch = id => switchTo(id); window.__pick = id => pickPlace(id); window.__ROOMS = ROOMS; window.__nav = nav; window.__openMap = () => openMap(); window.__buildHouse = buildHouse; window.__SEATS = SEATS; }
+  if (window.__DEBUG) { window.__W = W; window.__tap = (h, pt) => onTap(h, pt || [960, 540]); window.__switch = id => switchTo(id); window.__pick = id => pickPlace(id); window.__ROOMS = ROOMS; window.__nav = nav; window.__openMap = () => openMap(); window.__buildHouse = buildHouse; window.__SEATS = SEATS; window.__goPlace = id => goPlace(id); window.__give = (who, id) => give(who, W.items.find(i => i.id === id)); }
 
   useEffect(() => { const r = () => setSize({ w: window.innerWidth, h: window.innerHeight }); window.addEventListener('resize', r); return () => window.removeEventListener('resize', r); }, []);
   useEffect(() => { const h = setTimeout(() => setHint(false), 12000); return () => clearTimeout(h); }, []);
@@ -206,7 +210,7 @@ function App() {
 
   // saving
   const saveNow = () => {
-    store(SAVE_KEY, { items: W.items.map(({ id, kind, c: col, stripe, fillings: f, room, loc, rot, home, quest, layers, forWho }) => ({ id, kind, c: col, stripe, fillings: f, room, loc, rot, home, quest, layers, forWho })), hw: { stage: W.hw.stage, year: W.hw.year, pumpkin: W.hw.pumpkin }, xm: { stage: W.xm.stage, year: W.xm.year, tree: W.xm.tree }, asks: { ducks: { state: W.asks.ducks.state, who: W.asks.ducks.who }, school: { state: W.asks.school.state } }, uniform: W.uniform, spiderN: W.spiderN, seasonPick: W.seasonPick, folk: W.folk, sky: skySave(W), coins: W.coins, wardrobe: W.wardrobe, ach: W.ach, visited: W.visited, outfits: st.current.outfits, hunt: W.hunt, quests: W.quests, goalUp: W.goal.up, lights: W.flags.lights, blind: W.flags.blind, muted: st.current.muted, voice: st.current.voice });
+    store(SAVE_KEY, { items: W.items.map(({ id, kind, c: col, stripe, fillings: f, room, loc, rot, home, quest, layers, forWho, errand }) => ({ id, kind, c: col, stripe, fillings: f, room, loc, rot, home, quest, layers, forWho, errand })), hw: { stage: W.hw.stage, year: W.hw.year, pumpkin: W.hw.pumpkin }, xm: { stage: W.xm.stage, year: W.xm.year, tree: W.xm.tree }, asks: { ducks: { state: W.asks.ducks.state, who: W.asks.ducks.who }, school: { state: W.asks.school.state } }, uniform: W.uniform, spiderN: W.spiderN, seasonPick: W.seasonPick, folk: W.folk, sky: skySave(W), coins: W.coins, wardrobe: W.wardrobe, ach: W.ach, visited: W.visited, outfits: st.current.outfits, hunt: W.hunt, quests: W.quests, errand: W.errand, errN: W.errN, met: W.met, lettersRead: W.lettersRead, letter: W.letter, goalUp: W.goal.up, lights: W.flags.lights, blind: W.flags.blind, muted: st.current.muted, voice: st.current.voice });
     W.dirty = false;
   };
   useEffect(() => { W.dirty = true; }, [outfits, muted, voice]);
@@ -238,6 +242,10 @@ function App() {
     stepHalloween(W);
     stepXmas(W);
     stepAsks(W);
+    stepErrands(W, it => { if (it) { SFX.pop(); wordFx(KINDS[it.kind].word, headAt(c)); } });
+    stepCritters(W, dt);
+    stepPost(W);
+    stepVisit(W, placeAtHome);
     stepSky(W, dt);
     stepStink();
     stepHide(W, dt, p => { burst(W, 'confetti', headAt(p)); showToast(`You found ${NAMES[p.id]}!`); });
@@ -319,10 +327,21 @@ function App() {
   }
   function putIn(it, boxId) { it.loc = { s: 'in', box: boxId, order: W.T }; it.room = CONTAINERS[boxId].room; W.dirty = true; SFX.pop(); }
   function dropOnFloor(it, x, y) { const [fx, fy] = nav(W.room).nearestFree(x, y, 0.05); it.loc = { s: 'floor', x: fx, y: fy }; it.room = W.room; it.rot = rand(-20, 20); W.dirty = true; SFX.plop(); }
+  // a job finished: a cheer, a sparkle and a toast
+  function jobDone(E, thanker) {
+    const p = W.people[thanker];
+    if (p && p.room === W.room) { burst(W, 'confetti', headAt(p)); if (p.mode === 'stand' && !p.action) p.action = { kind: 'cheer', t0: W.T, dur: 1.4 }; }
+    if (c.mode === 'stand') c.action = { kind: 'cheer', t0: W.T, dur: 1.4 };
+    burst(W, 'spark', headAt(c), { n: 12, spread: 90 });
+    showToast('Job done! Well done!');
+  }
   function give(who, it) {
     const p = W.people[who];
     if (!p || p.room !== W.room) { say(W, me, `${NAMES[who]} is not here.`); return; }
     walkTo(W, c, ...nav(W.room).nearestFree(p.x + 0.6, p.y + 0.5), () => {
+      const job = errandGive(W, who, it, jobDone);
+      if (job === '') { if (it.kind === 'sandwich' || it.kind === 'cake') { SFX.nom(); p.action = { kind: 'eat', t0: W.T, dur: 2 }; } else p.action = { kind: 'cheer', t0: W.T, dur: 1.4 }; burst(W, 'hearts', headAt(p)); return; }
+      if (job) { say(W, who, job); return; }
       if (it.kind === 'spooky') { if (who === 'mum') decorate(W, t => showToast(t)); else say(W, who, 'Give it to Mum!'); return; }
       if (it.kind === 'xmasbox') { if (who === 'mum') decorateXmas(W, t => showToast(t)); else say(W, who, 'Give it to Mum!'); return; }
       if (it.kind === 'bread') { say(W, who, 'That bread is for the ducks!'); return; }
@@ -838,6 +857,7 @@ function App() {
     // doors by tapping the door itself
     const door = ROOMS[R].doors.find(d => d.hit && d.hit.includes(key));
     if (door) { doorAction(door); return; }
+    errandTap(W, R, key, jobDone);
     // cupboards
     const boxId = containerFor(R, key);
     if (boxId) {
@@ -1142,6 +1162,8 @@ function App() {
       return;
     }
     if (hit && hit.startsWith('person:')) { personTap(hit.slice(7)); return; }
+    if (hit && hit.startsWith('critter:')) { tapCritter(W, hit.slice(8), me, (w, at, k) => { if (w) wordFx(w, at); if (k) burst(W, k, at); }); return; }
+    if (hit === 'letter' && W.letter) { walkTo(W, c, ...nav(W.room).nearestFree(W.letter.x + 0.4, W.letter.y + 0.4), () => { SFX.zip(); wordFx('letter', P(W.letter.x, W.letter.y, 0.4)); setPanel({ kind: 'letter' }); setPackOpen(false); }); return; }
     if (hit && hit.startsWith('spider:')) { const s = W.spiders.find(x => String(x.id) === hit.slice(7)); if (s) { if (me === 'dad') playerCatch(W, s); else if (!s.alarmed) alarmSpider(W, s, me); else say(W, me, W.player === 'dad' ? 'Dad, get it!' : 'Dad is coming!'); wordFx('spider', P(s.x, s.y, 0.4)); } return; }
     if (hit && hit.startsWith('door:')) { const d = DOORMAP[W.room + ':' + hit.slice(5)]; if (d) { speak(d.label ? d.label.text : 'door', 'word'); doorAction(d); } return; }
     if (hit && hit.startsWith('obj:')) { const key = hit.slice(4); objTap(key, itemOf(key), pt); return; }
@@ -1268,6 +1290,10 @@ function App() {
     dyn.push({ key: 'person-' + p.id, x: p.x, y: p.y, z: p.z, el: <g data-hit={'person:' + p.id} style={{ cursor: 'pointer' }} opacity={p.op}>{el}</g> });
   }
   for (const s of W.spiders) if (s.room === R && !s.caught) { const g = P(s.x, s.y, 0); dyn.push({ key: 'spider' + s.id, x: s.x, y: s.y, z: 0, el: <g data-hit={'spider:' + s.id} style={{ cursor: 'pointer' }} transform={`translate(${g[0]} ${g[1]})`}><circle r={18} cy={-6} fill="transparent" /><Spider s={s} T={T} /></g> }); }
+  for (const cr of W.critters) if (cr.room === R) { const g = P(cr.x, cr.y, cr.z), sh = P(cr.x, cr.y, 0); dyn.push({ key: 'critter' + cr.id, x: cr.x, y: cr.y, z: 0, el: <g data-hit={'critter:' + cr.id} style={{ cursor: 'pointer' }}>
+    {cr.kind !== 'balloon' && <ellipse cx={sh[0]} cy={sh[1] + 2} rx={cr.kind === 'cat' ? 26 : 13} ry={cr.kind === 'cat' ? 7 : 4} fill="rgba(60,30,10,.14)" />}
+    <g transform={`translate(${g[0]} ${g[1]})`}><circle r={34} cy={-16} fill="transparent" /><g transform="scale(1.5)"><CritterArt c={cr} T={T} /></g></g></g> }); }
+  if (W.letter && R === 'downhall') { const g = P(W.letter.x, W.letter.y, 0); dyn.push({ key: 'letter', x: W.letter.x, y: W.letter.y, z: 0, el: <g data-hit="letter" style={{ cursor: 'pointer' }} transform={`translate(${g[0]} ${g[1]})`}><circle r={30} cy={-4} fill="transparent" /><g transform={`translate(0 ${-Math.abs(Math.sin(T * 3)) * 4})`}><LetterArt /></g></g> }); }
   for (const it of W.items) {
     if (it.room !== R || (it.loc.s !== 'floor' && it.loc.s !== 'bed') || (drag.current && drag.current.id === it.id)) continue;
     const z = it.loc.s === 'bed' ? 0.95 : 0; let b = P(it.loc.x, it.loc.y, z); let rot = it.rot || 0, flat = it.kind === 'cloth' || it.kind === 'book' ? 0.6 : 1;
@@ -1421,6 +1447,7 @@ function App() {
     {panel && panel.kind === 'clothes' && <ShopPanel people={rowIds()} me={me} outfits={dressed(W, outfits)} wardrobe={W.wardrobe} coins={W.coins} start={panel.cat} T={T} onBuy={shopBuy} onWear={(who, it) => shopWear(who, it)} onClose={() => { setPanel(null); SFX.zip(); }} />}
     {panel && panel.kind === 'fams' && <FamiliesPanel W={W} outfits={dressed(W, outfits)} here={W.out ? W.out.place : 'home'} onClose={() => { setPanel(null); SFX.zip(); }} onNew={() => setPanel({ kind: 'maker' })} onEdit={id => setPanel({ kind: 'maker', edit: id })} onVisit={place => { setPanel({ kind: 'map', here: W.out ? W.out.place : 'home', picked: place }); later(W, 0.5, () => goPlace(place)); }} />}
     {panel && panel.kind === 'maker' && <CreatorPanel key={panel.edit || 'new'} W={W} T={T} edit={panel.edit} onClose={() => setPanel(panel.edit ? { kind: 'fams' } : null)} onMake={panel.edit ? (d, home) => savePerson(panel.edit, d, home) : makePerson} />}
+    {panel && panel.kind === 'letter' && <LetterPanel W={W} onClose={() => { readLetter(W); setPanel(null); SFX.zip(); }} />}
     {panel && panel.kind === 'jobs' && <JobsPanel W={W} start={panel.tab} onClose={() => { setPanel(null); SFX.zip(); }} />}
     {pmenu && (() => { const p = W.people[pmenu.who]; if (!p || p.room !== R) return null; const s = toScreen(headAt(p)); const free = !W.hide && !p.busy && !(p.id === 'dad' && p.job) && p.mode !== 'lie';
       return <PersonMenu who={pmenu.who} x={clamp(s[0], 110, size.w - 110)} y={clamp(s[1] - 20, 120, size.h - 120)} canHide={free && !GRAND_HUGS[pmenu.who] && !isFolk(pmenu.who)} onClose={() => setPmenu(null)} onHug={() => hugPerson(pmenu.who)} onEdit={isFolk(pmenu.who) ? () => { setPmenu(null); setPanel({ kind: 'maker', edit: pmenu.who }); } : null} onHide={() => { setPmenu(null); startHide(W, pmenu.who); }} />; })()}

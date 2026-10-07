@@ -10,6 +10,7 @@ import { isChristmas } from './christmas.jsx';
 import { KIDS } from './asks.js';
 import { LIGHT_ROOMS, isLit } from './sky.jsx';
 import { GROC } from './places.jsx';
+import { errandTodo } from './errands.js';
 
 // Stickers. title: short words she can read. joke: the bit for whoever is reading with her. how: a tip if she has not got it yet.
 export const STICKERS = [
@@ -55,6 +56,11 @@ export const STICKERS = [
   { id: 'shop', icon: 'shopping', title: 'Super shopper', joke: 'Got everything on the list. Mum did not have to help!', how: 'Go to the shop and find everything on the list.' },
   { id: 'hopscotch', icon: 'star', title: 'Hopscotch', joke: '1, 2, 3, 4... all the way to 8!', how: 'Go to school and play hopscotch in the playground.' },
   { id: 'nanny', icon: 'biscuit', title: 'Big cuddle', joke: 'Nanny and Grandad love a cuddle.', how: "Go to Nanny and Grandad's and give them a hug." },
+  { id: 'helper', icon: 'keys', title: 'Little helper', joke: 'Five jobs done! Mum wants to know who you are and what you did with Callie.', how: 'When someone asks for help, do the job.', count: W => [W.errN || 0, 5] },
+  { id: 'superhelper', icon: 'star', title: 'Super helper', joke: 'Fifteen jobs! Dad is thinking of retiring.', how: 'Do 15 jobs for the family.', count: W => [W.errN || 0, 15] },
+  { id: 'animals', icon: 'butterfly', title: 'Animal friend', joke: 'A butterfly, a bird and a cat. Who is next? A giraffe?', how: 'Go outside and tap a butterfly, a bird and a cat.', count: W => [['butterfly', 'bird', 'cat'].filter(k => (W.met || {})[k]).length, 3] },
+  { id: 'post', icon: 'letter', title: 'Post reader', joke: 'Three letters read all by herself!', how: 'When the post comes, read the letter on the mat.', count: W => [W.lettersRead || 0, 3] },
+  { id: 'visitor', icon: 'cake', title: 'Play date', joke: 'A friend came round to play. Put the kettle on!', how: 'Make a friend in Families. One day they will knock on the door.' },
   { id: 'explorer', icon: 'star', title: 'Explorer', joke: 'Been to every place on the map!', how: 'Visit every place on the map.' },
 ];
 export const STICKER = Object.fromEntries(STICKERS.map(s => [s.id, s]));
@@ -113,6 +119,9 @@ export function todos(W) {
     list.push({ id: 'ducks', icon: 'duck', text: got ? 'Feed the ducks' : 'Get some bread', tip: got ? (W.room === 'park' ? 'Tap the ducks on the pond.' : 'Go to the park. Tap the front door, then Park.') : 'Look in the cupboard in the kitchen.' }); }
   if (isChristmas(W) && W.xm && W.xm.stage === 'asked') list.push({ id: 'xmas', icon: 'xmasbox', text: 'Get the Christmas box', tip: 'It is in the cardboard boxes in the attic. Then give it to Mum.' });
   if (isChristmas(W) && W.xm && W.xm.stage === 'decorated' && !W.xm.tree) list.push({ id: 'tree', icon: 'tree', text: 'Decorate the tree', tip: 'The tree is in the living room. Tap it!' });
+  const job = errandTodo(W, whereIs);
+  if (job) list.push(job);
+  if (W.letter && !W.out) list.push({ id: 'letter', icon: 'letter', text: 'Read the letter', tip: 'It is on the mat by the front door.' });
   const target = HUNT_ORDER[W.hunt.idx];
   if (target) list.push({ id: 'hunt', icon: target, text: `Find the ${target}`, count: `${W.hunt.idx + 1}/${HUNT_ORDER.length}`, tip: whereIs(W, W.items.find(i => i.kind === target)) || 'Look all round the house!' });
   return list;

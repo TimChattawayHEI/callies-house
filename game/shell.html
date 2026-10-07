@@ -245,6 +245,17 @@ button:focus-visible { outline: 3px solid var(--pink); outline-offset: 3px; }
 .jobs-btn.glow { animation: glow2 .6s ease-in-out infinite alternate; }
 @keyframes glow2 { to { box-shadow: 0 3px 0 #c9a16a, 0 0 0 6px rgba(255, 212, 94, .7); } }
 .sheet.jobs { width: min(620px, calc(100% - 24px)); }
+.sheet.letter-sheet { width: min(560px, calc(100% - 24px)); align-items: stretch; }
+.letter-paper { position: relative; background: #fffdf6; border: 2px solid #e3d0ae; border-radius: 10px; padding: 16px 20px 14px; box-shadow: 0 3px 0 #e3d0ae; overflow-y: auto; }
+.letter-paper p { margin: 0 0 6px; display: flex; flex-wrap: wrap; gap: 2px 8px; line-height: 1.6; border-bottom: 2px solid #e8eef7; padding-right: 50px; }
+.letter-paper p.sign { border-bottom: 0; padding-right: 0; }
+.letter-paper p.sign { justify-content: flex-end; margin-top: 8px; }
+.letter-paper .lw { font: 700 28px var(--read); color: #3b2a24; background: none; border: 0; border-radius: 10px; padding: 0 4px; cursor: pointer; }
+.letter-paper .lw:active { background: #ffe9a8; }
+.letter-paper .dear .lw { color: #c2456f; }
+.letter-paper .stamp { position: absolute; top: 10px; right: 12px; width: 40px; height: 46px; display: grid; place-items: center; background: #e86a92; color: #fff6ea; font-size: 24px; border: 3px dashed #fff6ea; outline: 2px solid #e86a92; border-radius: 4px; transform: rotate(6deg); }
+.letter-sheet .read-it { align-self: center; font-size: 19px; }
+@media (max-height: 500px) { .letter-paper .lw { font-size: 22px; } }
 .sheet.jobs .pair { display: flex; gap: 6px; flex-wrap: nowrap; min-width: 0; }
 .tab-btn { font: 700 20px var(--read); background: #fff; border: 2px solid var(--line); border-radius: 16px; padding: 4px 16px; cursor: pointer; color: var(--ink); }
 .tab-btn small { font: 700 14px var(--display); opacity: .7; }
