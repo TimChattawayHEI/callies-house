@@ -4,11 +4,17 @@ import { ROOMS, DOORMAP, route, doorTo, roomLayers, CONTAINERS, startItems } fro
 import { HUNT_ORDER, SURPRISES, KINDS } from './items.jsx';
 
 const navCache = {};
+let extraBlocks = {};
 export function nav(rid) {
-  if (!navCache[rid]) { const L = roomLayers(rid); navCache[rid] = makeNav({ bounds: ROOMS[rid].bounds, blocks: L.blocks }); }
+  if (!navCache[rid]) { const L = roomLayers(rid); navCache[rid] = makeNav({ bounds: ROOMS[rid].bounds, blocks: L.blocks.concat(extraBlocks[rid] || []) }); }
   return navCache[rid];
 }
 export const resetNav = rid => { delete navCache[rid]; };
+// things put down while playing (pet beds, tanks...) that people walk round
+export function setExtraBlocks(by) {
+  for (const r of new Set([...Object.keys(extraBlocks), ...Object.keys(by)])) delete navCache[r];
+  extraBlocks = by;
+}
 
 export const HOMES = {
   mum: { room: 'kitchen', x: 4.55, y: 1.15, face: 'back' },

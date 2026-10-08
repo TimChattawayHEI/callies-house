@@ -115,7 +115,8 @@ Object.assign(ROOMS, {
   ] },
 });
 ROOMS.clothes = { name: 'Clothes shop', town: true, bounds: [0.3, 14.8, 0.3, 10.8], cam: 1.05, doors: [OUT([14.75, 9.8], [13.6, 9.8], [14.6, 16.1, 8.9, 10.7], [15.35, 9.8, 1.45])] };
-export const TOWN = ['park', 'cafe', 'shop', 'school', 'nannydown', 'nannyup', 'nannygarden', 'clothes'];
+ROOMS.pets = { name: 'Pet shop', town: true, bounds: [0.3, 14.8, 0.3, 10.8], cam: 1.05, doors: [OUT([14.75, 9.8], [13.6, 9.8], [14.6, 16.1, 8.9, 10.7], [15.35, 9.8, 1.45])] };
+export const TOWN = ['park', 'cafe', 'shop', 'school', 'nannydown', 'nannyup', 'nannygarden', 'clothes', 'pets'];
 export const DOORMAP = {};
 for (const [rid, r] of Object.entries(ROOMS)) for (const d of r.doors) DOORMAP[rid + ':' + d.id] = d;
 
@@ -144,6 +145,7 @@ export const doorTo = (from, to) => (to ? ROOMS[from].doors.find(d => d.to === t
 
 /* ---------------- words for everything (read aloud when tapped) ---------------- */
 export const TOWN_WORDS = {
+  Aquarium: 'fish', BirdCages: 'birds', Hutches: 'bunny', Pen: 'puppies', CatTree: 'kittens', Shelves: 'pet food',
   Cubbies: 'tops', ShoeWall: 'shoes', MirrorLogo: 'mirror', FittingRooms: 'fitting room', Rail: 'clothes', Mannequin: 'dummy', CapsTable: 'hats',
   Swing: 'swing', SwingFrame: 'swings', Slide: 'slide', TowerFront: 'slide', TowerBack: 'slide', ZipLine: 'zip line', MerryGoRound: 'roundabout', Sandpit: 'sand', SeeSaw: 'see-saw',
   Duck: 'duck', Reeds: 'pond', Bench: 'bench', Bin: 'bin', VanBack: 'ice cream', VanFront: 'ice cream', EntranceGate: 'gate', Tree: 'tree', Fence: 'fence', Hedges: 'hedge',
@@ -468,8 +470,8 @@ export function callieItems() {
 }
 
 /* ---------------- building the scene rooms from the Claude Design files ---------------- */
-const SCENE_OF = { nannydown: 'nannydown', nannyup: 'nannyup', nannygarden: 'nannygarden', hallway: 'hallway', parents: 'parents', chloe: 'chloe', bathroom: 'bathroom', attic: 'attic', downhall: 'downhall', kitchen: 'kitchen', toilet: 'toilet', living: 'living', middle: 'middle', garden: 'garden', park: 'park', cafe: 'cafe', shop: 'shop', school: 'school', clothes: 'clothes' };
-const DEEP = new Set(['park', 'cafe', 'shop', 'school', 'nannydown', 'nannyup', 'nannygarden', 'clothes']);
+const SCENE_OF = { nannydown: 'nannydown', nannyup: 'nannyup', nannygarden: 'nannygarden', hallway: 'hallway', parents: 'parents', chloe: 'chloe', bathroom: 'bathroom', attic: 'attic', downhall: 'downhall', kitchen: 'kitchen', toilet: 'toilet', living: 'living', middle: 'middle', garden: 'garden', park: 'park', cafe: 'cafe', shop: 'shop', school: 'school', clothes: 'clothes', pets: 'pets' };
+const DEEP = new Set(['park', 'cafe', 'shop', 'school', 'nannydown', 'nannyup', 'nannygarden', 'clothes', 'pets']);
 const plainG = el => el.type === 'g' && Object.keys(el.props).every(k => k === 'children');
 // Split a scene into its pieces, keeping each piece's translate wrappers.
 function flattenStage(stage, deep) {
@@ -523,6 +525,8 @@ export function roomLayers(rid) {
       // idle breathing alone does not count as moving (keeps big places light on tablets)
       const noT = pr => { const { T: _t, ...rest } = pr; return ser(rest); };
       moving = flat.map((f, i) => !flat2[i] || noT(f.raw.props) !== noT(flat2[i].raw.props));
+      // the pet shop's animals swim, wag and hop, and leave once adopted
+      if (rid === 'pets') moving = moving.map((m, i) => m || ['Pen', 'CatTree', 'Aquarium', 'BirdCages', 'Hutches'].includes(flat[i].key));
     }
     items = data.items.map((d, i) => {
       const f = flat[i];

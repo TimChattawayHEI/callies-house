@@ -70,6 +70,20 @@ function MapClothes() {
   </g>;
 }
 
+// The pet shop, between the cafe and the school.
+function MapPets() {
+  return <g data-loc="pets" style={{ cursor: 'pointer' }}>
+    <FloorPlane z={0.006} x={7.45} y={1.35}><rect width={210} height={250} fill="#7aa84e" /><rect x={90} y={200} width={30} height={50} fill="#c9c6bc" /></FloorPlane>
+    <Box x={7.6} y={1.6} w={1.8} d={1.6} h={1.1} c={['#e4f0e4', '#d2e4d4', '#bcd6c0']} />
+    <Box x={7.5} y={1.5} z={1.1} w={2.0} d={1.8} h={0.14} c={['#2f8f7c', '#277a69', '#1f6658']} />
+    <FaceY y={3.2} x0={7.6} z1={1.1}><rect x={0} y={4} width={180} height={28} fill="#2f8f7c" /><text x={90} y={25} textAnchor="middle" fontSize={19} fontWeight="800" fill="#fbf8f2" fontFamily="'Baloo 2', sans-serif">PETS</text>
+      <rect x={14} y={42} width={52} height={50} fill="#bcdcea" stroke="#fbf8f2" strokeWidth={3} /><rect x={114} y={42} width={52} height={50} fill="#bcdcea" stroke="#fbf8f2" strokeWidth={3} />
+      <rect x={74} y={46} width={32} height={64} fill="#277a69" />
+      <g fill="#c25a7a" transform="translate(40 76)"><ellipse cx={0} cy={4} rx={6} ry={5} /><circle cx={-5} cy={-3} r={2.2} /><circle cx={-1.5} cy={-6} r={2.2} /><circle cx={2.5} cy={-6} r={2.2} /><circle cx={6} cy={-3} r={2.2} /></g>
+      <g transform="translate(140 80)"><ellipse cx={0} cy={0} rx={10} ry={6} fill="#f28c28" /><path d="M-9,0 l-7,-6 v12z" fill="#e0661c" /></g></FaceY>
+  </g>;
+}
+
 /* ---------------- places on the map ---------------- */
 // door: where the path starts on the map; road: where it meets the main road (y = 5)
 export const PLACES = {
@@ -80,8 +94,9 @@ export const PLACES = {
   shop: { word: 'Shop', say: 'the shop', door: [10.8, 8.95], road: [10.8, 5.0], pin: [11.0, 8.0, 3.4] },
   nanny: { word: 'Nanny', say: "Nanny and Grandad's", door: [15.45, 3.4], road: [15.45, 5.0], pin: [15.5, 1.8, 3.9], room: 'nannydown' },
   clothes: { word: 'Clothes', say: 'the clothes shop', door: [15.4, 8.55], road: [15.4, 5.0], pin: [15.4, 7.0, 2.9] },
+  pets: { word: 'Pets', say: 'the pet shop', door: [8.5, 3.75], road: [8.5, 5.0], pin: [8.5, 2.3, 2.8] },
 };
-export const ORDER = ['home', 'cafe', 'school', 'park', 'shop', 'nanny', 'clothes'];
+export const ORDER = ['home', 'cafe', 'school', 'park', 'shop', 'nanny', 'clothes', 'pets'];
 function routePts(a, b) {
   const A = PLACES[a], B = PLACES[b], pts = [A.door, A.road];
   if (A.street && !B.street) pts.push([7.0, 11.0], [7.0, 5.0]);
@@ -134,6 +149,7 @@ export function TownMap({ here, T, drive, onPick, onGo, onClose, picked, fams = 
       <rect x={cx - w} y={cy - h} width={w * 2} height={h * 2} fill="#efe2d0" />
       {kids}
       <MapClothes />
+      <MapPets />
       <NewStreet fams={fams} />
       {car}
       {ORDER.map(k => { const p = P(...PLACES[k].pin), on = picked === k, word = PLACES[k].word, wd = word.length * 26 + 44; return <g key={k} data-loc={k} transform={`translate(${p[0]} ${p[1]})`}>

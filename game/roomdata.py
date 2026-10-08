@@ -135,6 +135,12 @@ LOC = {
    'Cubbies': F([1,6,0,0.55]), 'ShoeWall': F([7,10.2,0,0.35]),
    '_block': [[0,1.6,1,6.3],[0.15,1.05,6.95,8.45],[0.25,0.95,9.35,10.05]],
  },
+ 'pets': {
+   'Walls': dict(kind='bg'), 'FrontWalls': dict(kind='front'), 'Floor': dict(kind='bg'),
+   'Shelves': F([10.5,14.5,0,0.45]), 'Aquarium': F([0.8,5.2,0,0.8]), 'BirdCages': F([6.4,9.7,0,0.7]), 'Hutches': F([0,1.1,1,6.4]),
+   'Pen': F([2.6,7.2,4,7.42]), 'CatTree': F([9.0,11.25,4.3,6.1], None), 'Till': F([11.6,14.2,8,8.75]),
+   '_block': [[9.0,10.2,4.3,5.4],[10.5,11.25,5.5,6.1]],
+ },
  'nannygarden': {
    'HouseWall': dict(kind='wall'), 'SideWall': dict(kind='wall'), 'LowX': dict(kind='front'), 'LowY': dict(kind='front'),
    'Seating': F([0.15,3.05,0.35,2.85], None), 'Fountain': F([8.05,10.35,2.75,5.05]),

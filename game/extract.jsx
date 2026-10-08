@@ -4,7 +4,7 @@ import { SCENES, Iso } from './rooms.gen.jsx';
 import fs from 'fs';
 const { C, S } = Iso;
 const out = {};
-const DEEP = new Set(['park', 'cafe', 'shop', 'school', 'nannydown', 'nannyup', 'nannygarden', 'clothes']);
+const DEEP = new Set(['park', 'cafe', 'shop', 'school', 'nannydown', 'nannyup', 'nannygarden', 'clothes', 'pets']);
 const plainG = el => el.type === 'g' && Object.keys(el.props).every(k => k === 'children');
 for (const [room, Scene] of Object.entries(SCENES)) {
   window.__sceneBegin(room);

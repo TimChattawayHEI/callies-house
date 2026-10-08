@@ -11,6 +11,7 @@ import { KIDS } from './asks.js';
 import { LIGHT_ROOMS, isLit } from './sky.jsx';
 import { GROC } from './places.jsx';
 import { errandTodo } from './errands.js';
+import { petTodos } from './pets.jsx';
 
 // Stickers. title: short words she can read. joke: the bit for whoever is reading with her. how: a tip if she has not got it yet.
 export const STICKERS = [
@@ -61,13 +62,19 @@ export const STICKERS = [
   { id: 'animals', icon: 'butterfly', title: 'Animal friend', joke: 'A butterfly, a bird and a cat. Who is next? A giraffe?', how: 'Go outside and tap a butterfly, a bird and a cat.', count: W => [['butterfly', 'bird', 'cat'].filter(k => (W.met || {})[k]).length, 3] },
   { id: 'post', icon: 'letter', title: 'Post reader', joke: 'Three letters read all by herself!', how: 'When the post comes, read the letter on the mat.', count: W => [W.lettersRead || 0, 3] },
   { id: 'visitor', icon: 'cake', title: 'Play date', joke: 'A friend came round to play. Put the kettle on!', how: 'Make a friend in Families. One day they will knock on the door.' },
+  { id: 'pet', icon: 'paw', title: 'My first pet', joke: 'A new member of the family! Mum says she is not cleaning up after it.', how: 'Go to the pet shop and adopt a pet.' },
+  { id: 'petfamily', icon: 'paw', title: 'Pet family', joke: 'Three pets! The house is getting noisy.', how: 'Adopt 3 pets from the pet shop.' },
+  { id: 'petfeed', icon: 'paw', title: 'Pet feeder', joke: 'Ten dinners served. The pets think you are the best.', how: 'Feed your pets 10 times.', count: W => [(W.petStats || {}).fed || 0, 10] },
+  { id: 'walkies', icon: 'paw', title: 'Walkies!', joke: 'A big walk in the park. One very happy dog.', how: 'Take your dog to the park.' },
+  { id: 'poo', icon: 'poo', title: 'Poo patrol', joke: 'Three poos scooped. Dad is very proud. And a bit sick.', how: 'Clean up the dog poo in the garden 3 times.', count: W => [(W.petStats || {}).poo || 0, 3] },
+  { id: 'petcare', icon: 'paw', title: 'Clean home', joke: 'Sparkly tanks and tidy cages. Five stars!', how: 'Clean a pet home 3 times.', count: W => [(W.petStats || {}).clean || 0, 3] },
   { id: 'explorer', icon: 'star', title: 'Explorer', joke: 'Been to every place on the map!', how: 'Visit every place on the map.' },
 ];
 export const STICKER = Object.fromEntries(STICKERS.map(s => [s.id, s]));
 
 export function JobIcon({ kind, size = 34, grey }) {
   const simple = { star: 'M0,-11 L3.5,-3.5 11.5,-3 5.5,2.5 7,10.5 0,6 -7,10.5 -5.5,2.5 -11.5,-3 -3.5,-3.5Z' };
-  if (kind === 'star' || kind === 'music' || kind === 'camera' || kind === 'spider' || kind === 'pumpkin' || kind === 'ball' || kind === 'zip' || kind === 'snowman' || kind === 'stink' || kind === 'coin' || kind === 'bulb' || kind === 'storm' || kind === 'puddle' || kind === 'rainbow' || kind === 'sofa' || kind === 'roller')
+  if (kind === 'star' || kind === 'music' || kind === 'camera' || kind === 'spider' || kind === 'pumpkin' || kind === 'ball' || kind === 'zip' || kind === 'snowman' || kind === 'stink' || kind === 'coin' || kind === 'bulb' || kind === 'storm' || kind === 'puddle' || kind === 'rainbow' || kind === 'sofa' || kind === 'roller' || kind === 'paw' || kind === 'poo')
     return <svg viewBox="-14 -14 28 28" width={size} height={size} aria-hidden="true" style={grey ? { filter: 'grayscale(1)', opacity: 0.35 } : null}>
       {kind === 'star' && <path d={simple.star} fill="#ffd45e" stroke="#e0a92e" strokeWidth={1.5} />}
       {kind === 'music' && <text x={0} y={8} textAnchor="middle" fontSize={22} fill="#e86a92">♫</text>}
@@ -84,6 +91,8 @@ export function JobIcon({ kind, size = 34, grey }) {
       {kind === 'snowman' && <g><circle cy={5} r={7} fill="#fff" stroke="#c9d6e2" /><circle cy={-5} r={5} fill="#fff" stroke="#c9d6e2" /><rect x={-4} y={-14} width={8} height={5} fill="#2b2b2e" /><path d="M0,-5 l4,1 -4,1z" fill="#f28a2e" /></g>}
       {kind === 'sofa' && <g><rect x={-12} y={-6} width={24} height={9} rx={3} fill="#3f8a8a" /><rect x={-13} y={0} width={26} height={8} rx={3} fill="#5fa8a8" /><rect x={-10} y={8} width={3} height={3} fill="#8a5a3a" /><rect x={7} y={8} width={3} height={3} fill="#8a5a3a" /></g>}
       {kind === 'roller' && <g><rect x={-11} y={-11} width={20} height={9} rx={3} fill="#e8a2b4" stroke="#c97c92" strokeWidth={1.2} /><path d="M9,-6.5 h3 v7 h-11 v4" fill="none" stroke="#6b6f74" strokeWidth={2} /><rect x={-2.5} y={4} width={5} height={10} rx={2} fill="#8a5a3a" /></g>}
+      {kind === 'paw' && <g fill="#c25a7a"><ellipse cx={0} cy={4} rx={7} ry={6} /><circle cx={-7} cy={-3} r={3} /><circle cx={-2.5} cy={-7.5} r={3} /><circle cx={2.5} cy={-7.5} r={3} /><circle cx={7} cy={-3} r={3} /></g>}
+      {kind === 'poo' && <g><ellipse cx={0} cy={8} rx={11} ry={4.5} fill="#6b4226" /><ellipse cx={0} cy={3} rx={8.5} ry={4} fill="#7a4d2c" /><ellipse cx={0} cy={-2} rx={5.5} ry={3.4} fill="#87573a" /><path d="M0,-5 q3,-4 1,-7" stroke="#87573a" strokeWidth={3} fill="none" strokeLinecap="round" /><circle cx={-3} cy={3} r={1.2} fill="#fff" /><circle cx={3} cy={3} r={1.2} fill="#fff" /></g>}
       {kind === 'ball' && <g><circle r={10} fill="#fff" stroke="#2b2b2e" /><path d="M0,-4 l3.5,2.5 -1.3,4 -4.4,0 -1.3,-4Z" fill="#2b2b2e" /></g>}
     </svg>;
   return <span style={grey ? { filter: 'grayscale(1)', opacity: 0.35, display: 'grid' } : { display: 'grid' }}><ItemIcon it={{ kind }} size={size} /></span>;
@@ -121,6 +130,7 @@ export function todos(W) {
   if (isChristmas(W) && W.xm && W.xm.stage === 'decorated' && !W.xm.tree) list.push({ id: 'tree', icon: 'tree', text: 'Decorate the tree', tip: 'The tree is in the living room. Tap it!' });
   const job = errandTodo(W, whereIs);
   if (job) list.push(job);
+  for (const t of petTodos(W)) list.push(t);
   if (W.letter && !W.out) list.push({ id: 'letter', icon: 'letter', text: 'Read the letter', tip: 'It is on the mat by the front door.' });
   const target = HUNT_ORDER[W.hunt.idx];
   if (target) list.push({ id: 'hunt', icon: target, text: `Find the ${target}`, count: `${W.hunt.idx + 1}/${HUNT_ORDER.length}`, tip: whereIs(W, W.items.find(i => i.kind === target)) || 'Look all round the house!' });

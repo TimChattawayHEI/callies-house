@@ -245,6 +245,38 @@ button:focus-visible { outline: 3px solid var(--pink); outline-offset: 3px; }
 .jobs-btn.glow { animation: glow2 .6s ease-in-out infinite alternate; }
 @keyframes glow2 { to { box-shadow: 0 3px 0 #c9a16a, 0 0 0 6px rgba(255, 212, 94, .7); } }
 .sheet.jobs { width: min(620px, calc(100% - 24px)); }
+/* pet shop */
+.sheet.petshop { width: min(900px, calc(100% - 24px)); max-height: min(92vh, 640px); }
+.sheet.petshop .box-head { gap: 8px; }
+.coins-pill { display: inline-flex; align-items: center; gap: 6px; background: var(--ink, #3b2a24); color: #fff6ea; border-radius: 999px; padding: 4px 12px 4px 6px; font: 800 18px var(--display); margin-left: auto; }
+.coins-pill i, .pet-price i, .coin-tag i { width: 18px; height: 18px; border-radius: 50%; background: #f2c94c; box-shadow: inset 0 -2px 0 #d9a92c; display: inline-block; }
+.pet-body { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 12px; min-height: 0; flex: 1; }
+.pet-stage { position: relative; border-radius: 20px; display: flex; flex-direction: column; justify-content: flex-end; align-items: stretch; padding: 8px; min-height: 0; background: #dcecc8; }
+.pet-stage.cats { background: #f3dccd; } .pet-stage.small { background: #f4e8c8; } .pet-stage.fish { background: #cfe8f2; } .pet-stage.birds { background: #e0ecd8; } .pet-stage.mine { background: #e6efe2; }
+.pet-stage svg { width: 100%; flex: 1; min-height: 0; }
+.pet-empty { margin: auto; font: 700 18px var(--read); text-align: center; opacity: .7; }
+.pet-name { background: rgba(255,255,255,.75); border: 0; border-radius: 14px; padding: 4px 10px; display: flex; flex-direction: column; align-items: center; cursor: pointer; }
+.pet-name b { font: 800 26px var(--read); line-height: 1.1; } .pet-name small { font: 700 16px var(--read); opacity: .75; }
+.pet-pick { display: flex; flex-direction: column; gap: 8px; min-height: 0; min-width: 0; }
+.pet-stage, .pet-grid, .pet-tabs { min-width: 0; }
+.pet-tabs { display: flex; gap: 5px; overflow-x: auto; flex: none; padding-bottom: 2px; }
+.pet-tabs .pill { flex: none; padding: 4px 12px; font-size: 15px; }
+.pet-tabs .pill.on { background: #2f8f7c; color: #fff; border-color: #22695b; }
+.pet-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; overflow-y: auto; min-height: 0; flex: 1; align-content: start; padding: 2px; }
+.pet-tile { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 6px 4px; border-radius: 16px; background: #fff; border: 2px solid #e4ecdf; cursor: pointer; color: var(--ink, #3b2a24); }
+.pet-tile[aria-pressed="true"] { border-color: #2f8f7c; box-shadow: 0 0 0 3px #cdeae2; }
+.pet-tile b { font: 800 17px var(--read); line-height: 1.1; } .pet-tile small { font: 700 12px var(--read); opacity: .7; line-height: 1.1; text-align: center; }
+.pet-price { display: inline-flex; align-items: center; gap: 4px; font: 800 15px var(--display); margin-top: 2px; }
+.pet-price i { width: 14px; height: 14px; } .pet-price.mine { color: #2f8f7c; }
+.pet-go { display: flex; align-items: center; justify-content: center; gap: 10px; flex: none; }
+.coin-tag { display: inline-flex; align-items: center; gap: 4px; background: rgba(0,0,0,.18); border-radius: 999px; padding: 0 10px 0 4px; }
+@media (max-width: 640px) { .pet-body { grid-template-columns: 1fr; grid-template-rows: 150px minmax(0, 1fr); } .pet-name b { font-size: 20px; } .pet-name small { font-size: 13px; } .sheet.petshop { max-height: 90vh; } }
+.sheet.petfood { width: min(560px, calc(100% - 24px)); }
+.petfood-q { margin: 0; font: 800 26px var(--read); text-align: center; }
+.petfood-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.tile.food-tile { width: auto; height: auto; display: flex; align-items: center; gap: 10px; padding: 8px 12px; font: 800 22px var(--read); justify-content: flex-start; }
+.petmenu .pm-title { align-self: center; font: 800 18px var(--read); padding: 0 6px; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 520px) { .petmenu .pm-title { display: none; } .tile.food-tile { font-size: 18px; } }
 .sheet.letter-sheet { width: min(560px, calc(100% - 24px)); align-items: stretch; }
 .letter-paper { position: relative; background: #fffdf6; border: 2px solid #e3d0ae; border-radius: 10px; padding: 16px 20px 14px; box-shadow: 0 3px 0 #e3d0ae; overflow-y: auto; }
 .letter-paper p { margin: 0 0 6px; display: flex; flex-wrap: wrap; gap: 2px 8px; line-height: 1.6; border-bottom: 2px solid #e8eef7; padding-right: 50px; }
