@@ -24,6 +24,7 @@ import { grandsArrive, stepGrands, GRAND_HUGS } from './grand.js';
 import { TownMap, PLACES, pickParty, homeNow, arriveAt, stepCompanion, compLine } from './town.jsx';
 import { initAsks, stepAsks, ducksFed, schoolReady, schoolDone, dressed, KIDS } from './asks.js';
 import { initErrands, stepErrands, errandTap, errandGive } from './errands.js';
+import { initPersonality, stepSocial, AboutPanel } from './personality.jsx';
 import { initEncounters, stepCritters, tapCritter, CritterArt, stepPost, readLetter, LetterArt, LetterPanel, stepVisit } from './encounters.jsx';
 import { initXmas, resetXmas, stepXmas, decorateXmas, isChristmas, TreePanel, TREE_AT } from './christmas.jsx';
 import { initHalloween, resetHalloween, stepHalloween, decorate, isHalloween, seasonOf, SEASON_LABEL, SEASON_CYCLE, PumpkinPanel } from './halloween.jsx';
@@ -158,6 +159,7 @@ function App() {
   if (!W.asks) initAsks(W, saved);
   if (W.errN == null) initErrands(W, saved);
   if (!W.critters) initEncounters(W, saved);
+  if (!W.friends) initPersonality(W, saved);
   if (!W.folk) initFolk(W, saved);
   if (W.clock == null) initSky(W, saved);
   if (W.coins == null) W.coins = saved && saved.coins != null ? saved.coins : 60;
@@ -208,9 +210,10 @@ function App() {
     spawnSpider(W, 'hallway');
   }, []);
 
+  W.panelOpen = !!panel;
   // saving
   const saveNow = () => {
-    store(SAVE_KEY, { items: W.items.map(({ id, kind, c: col, stripe, fillings: f, room, loc, rot, home, quest, layers, forWho, errand }) => ({ id, kind, c: col, stripe, fillings: f, room, loc, rot, home, quest, layers, forWho, errand })), hw: { stage: W.hw.stage, year: W.hw.year, pumpkin: W.hw.pumpkin }, xm: { stage: W.xm.stage, year: W.xm.year, tree: W.xm.tree }, asks: { ducks: { state: W.asks.ducks.state, who: W.asks.ducks.who }, school: { state: W.asks.school.state } }, uniform: W.uniform, spiderN: W.spiderN, seasonPick: W.seasonPick, folk: W.folk, sky: skySave(W), coins: W.coins, wardrobe: W.wardrobe, ach: W.ach, visited: W.visited, outfits: st.current.outfits, hunt: W.hunt, quests: W.quests, errand: W.errand, errN: W.errN, met: W.met, lettersRead: W.lettersRead, letter: W.letter, goalUp: W.goal.up, lights: W.flags.lights, blind: W.flags.blind, muted: st.current.muted, voice: st.current.voice });
+    store(SAVE_KEY, { items: W.items.map(({ id, kind, c: col, stripe, fillings: f, room, loc, rot, home, quest, layers, forWho, errand }) => ({ id, kind, c: col, stripe, fillings: f, room, loc, rot, home, quest, layers, forWho, errand })), hw: { stage: W.hw.stage, year: W.hw.year, pumpkin: W.hw.pumpkin }, xm: { stage: W.xm.stage, year: W.xm.year, tree: W.xm.tree }, asks: { ducks: { state: W.asks.ducks.state, who: W.asks.ducks.who }, school: { state: W.asks.school.state } }, uniform: W.uniform, spiderN: W.spiderN, seasonPick: W.seasonPick, folk: W.folk, sky: skySave(W), coins: W.coins, wardrobe: W.wardrobe, ach: W.ach, visited: W.visited, outfits: st.current.outfits, hunt: W.hunt, quests: W.quests, errand: W.errand, errN: W.errN, traits: W.traits, friends: W.friends, met: W.met, lettersRead: W.lettersRead, letter: W.letter, goalUp: W.goal.up, lights: W.flags.lights, blind: W.flags.blind, muted: st.current.muted, voice: st.current.voice });
     W.dirty = false;
   };
   useEffect(() => { W.dirty = true; }, [outfits, muted, voice]);
@@ -246,6 +249,7 @@ function App() {
     stepCritters(W, dt);
     stepPost(W);
     stepVisit(W, placeAtHome);
+    stepSocial(W, (kind, id) => { const p = W.people[id]; if (p && p.room === W.room) burst(W, kind, headAt(p), kind === 'hearts' ? {} : { n: 10, spread: 80 }); });
     stepSky(W, dt);
     stepStink();
     stepHide(W, dt, p => { burst(W, 'confetti', headAt(p)); showToast(`You found ${NAMES[p.id]}!`); });
@@ -1445,12 +1449,13 @@ function App() {
       onDeselect={() => { patchBuild({ sel: null }); SFX.click(); }}
       onStyle={setStyle} onApply={applyStyle} onUndo={undoStyle} onDone={endBuild} />}
     {panel && panel.kind === 'clothes' && <ShopPanel people={rowIds()} me={me} outfits={dressed(W, outfits)} wardrobe={W.wardrobe} coins={W.coins} start={panel.cat} T={T} onBuy={shopBuy} onWear={(who, it) => shopWear(who, it)} onClose={() => { setPanel(null); SFX.zip(); }} />}
-    {panel && panel.kind === 'fams' && <FamiliesPanel W={W} outfits={dressed(W, outfits)} here={W.out ? W.out.place : 'home'} onClose={() => { setPanel(null); SFX.zip(); }} onNew={() => setPanel({ kind: 'maker' })} onEdit={id => setPanel({ kind: 'maker', edit: id })} onVisit={place => { setPanel({ kind: 'map', here: W.out ? W.out.place : 'home', picked: place }); later(W, 0.5, () => goPlace(place)); }} />}
+    {panel && panel.kind === 'fams' && <FamiliesPanel W={W} outfits={dressed(W, outfits)} here={W.out ? W.out.place : 'home'} onClose={() => { setPanel(null); SFX.zip(); }} onNew={() => setPanel({ kind: 'maker' })} onEdit={id => setPanel({ kind: 'maker', edit: id })} onAbout={id => setPanel({ kind: 'about', who: id, back: 'fams' })} onVisit={place => { setPanel({ kind: 'map', here: W.out ? W.out.place : 'home', picked: place }); later(W, 0.5, () => goPlace(place)); }} />}
     {panel && panel.kind === 'maker' && <CreatorPanel key={panel.edit || 'new'} W={W} T={T} edit={panel.edit} onClose={() => setPanel(panel.edit ? { kind: 'fams' } : null)} onMake={panel.edit ? (d, home) => savePerson(panel.edit, d, home) : makePerson} />}
+    {panel && panel.kind === 'about' && <AboutPanel key={panel.who} W={W} who={panel.who} head={<HeadIcon who={panel.who} o={dressed(W, outfits)[panel.who] || DEFAULT_OUTFITS[panel.who]} size={30} />} onClose={() => { setPanel(panel.back ? { kind: panel.back } : null); SFX.zip(); }} />}
     {panel && panel.kind === 'letter' && <LetterPanel W={W} onClose={() => { readLetter(W); setPanel(null); SFX.zip(); }} />}
     {panel && panel.kind === 'jobs' && <JobsPanel W={W} start={panel.tab} onClose={() => { setPanel(null); SFX.zip(); }} />}
     {pmenu && (() => { const p = W.people[pmenu.who]; if (!p || p.room !== R) return null; const s = toScreen(headAt(p)); const free = !W.hide && !p.busy && !(p.id === 'dad' && p.job) && p.mode !== 'lie';
-      return <PersonMenu who={pmenu.who} x={clamp(s[0], 110, size.w - 110)} y={clamp(s[1] - 20, 120, size.h - 120)} canHide={free && !GRAND_HUGS[pmenu.who] && !isFolk(pmenu.who)} onClose={() => setPmenu(null)} onHug={() => hugPerson(pmenu.who)} onEdit={isFolk(pmenu.who) ? () => { setPmenu(null); setPanel({ kind: 'maker', edit: pmenu.who }); } : null} onHide={() => { setPmenu(null); startHide(W, pmenu.who); }} />; })()}
+      return <PersonMenu who={pmenu.who} x={clamp(s[0], 110, size.w - 110)} y={clamp(s[1] - 20, 120, size.h - 120)} canHide={free && !GRAND_HUGS[pmenu.who] && !isFolk(pmenu.who)} onClose={() => setPmenu(null)} onHug={() => hugPerson(pmenu.who)} onEdit={isFolk(pmenu.who) ? () => { setPmenu(null); setPanel({ kind: 'maker', edit: pmenu.who }); } : null} onAbout={() => { setPmenu(null); setPanel({ kind: 'about', who: pmenu.who }); }} onHide={() => { setPmenu(null); startHide(W, pmenu.who); }} />; })()}
     {W.hide && W.hide.phase === 'count' && T > W.hide.t0 && <div className="countdown">{Math.min(10, Math.floor((T - W.hide.t0) / 0.55) + 1)}</div>}
     {W.photo && W.photo.stage === 'count' && T - W.photo.t0 < 2.4 && <div className="countdown">{3 - Math.floor((T - W.photo.t0) / 0.8)}</div>}
     {W.photo && W.photo.stage === 'gather' && <div className="photo-bar" onPointerDown={e => e.stopPropagation()}><span>Everyone get together!</span><button className="done" onClick={snapPhoto}>Snap!</button><button className="pill" onClick={() => setPanel({ kind: 'album' })}>Photos</button><button className="pill" onClick={cancelPhoto}>Cancel</button></div>}

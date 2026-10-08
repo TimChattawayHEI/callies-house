@@ -7,6 +7,7 @@ import { ROOMS } from './rooms.jsx';
 import { buildHouse, houseLook, houseRooms, entryRoom, makePlan, HOUSE_TYPES } from './homes.jsx';
 import { HouseIcon } from './builder.jsx';
 import { PLACES, ORDER } from './town.jsx';
+import { helloLine, personaOf, randomTraits, randomLikes, TraitPicker } from './personality.jsx';
 
 export const CALLIE_FAM = ['callie', 'chloe', 'mum', 'dad', 'connor'];
 export const PLOTS = [2.0, 4.6, 9.4, 12.2, 15.0];
@@ -88,7 +89,7 @@ export function createPerson(W, d, famChoice) {
 export function editPerson(W, id, d, famChoice) {
   const def = folkDef(W, id); if (!def) return null;
   const oldName = def.name, oldFam = def.fam;
-  Object.assign(def, { name: d.name, body: d.body, skin: d.skin, hair: d.hair, hairCol: d.hairCol, glasses: d.glasses, beard: d.beard, voice: d.voice, top: d.top, color: d.color });
+  Object.assign(def, { name: d.name, body: d.body, skin: d.skin, hair: d.hair, hairCol: d.hairCol, glasses: d.glasses, beard: d.beard, voice: d.voice, top: d.top, color: d.color, traits: d.traits, likes: d.likes });
   def.outfit = { ...def.outfit, top: d.top, color: d.color };
   // a family named after this person takes the new name too
   if (oldFam !== 'home' && W.folk.fams[oldFam] && W.folk.fams[oldFam].name === oldName && oldName !== d.name) {
@@ -119,7 +120,6 @@ export function familyOf(W, id) {
 export const placeOfRoom = rid => (ROOMS[rid] && ROOMS[rid].place) || null;
 
 /* ---------------- what they get up to ---------------- */
-const HELLO = ['Hello!', 'Hi there!', 'Welcome to my house!', 'Come in!', 'Hello, friend!'];
 export function stepFolk(W) {
   if (!W.folk) return;
   const me = player(W), party = (W.out && W.out.party) || [];
@@ -130,13 +130,15 @@ export function stepFolk(W) {
     if (!rooms.includes(p.room)) continue;
     // say hello when someone comes into the room
     if (p.room === W.room && W.T - (p.helloT || -99) > 60 && me && me.room === W.room && dist([me.x, me.y], [p.x, p.y]) < 3) {
-      p.helloT = W.T; later(W, 0.4, () => { if (p.room === W.room) { say(W, p.id, pick([...HELLO, `Hi, ${NAMES[W.player]}!`])); if (p.mode === 'stand') p.action = { kind: 'wave', t0: W.T, dur: 1.4 }; } });
+      p.helloT = W.T; later(W, 0.4, () => { if (p.room === W.room) { say(W, p.id, helloLine(W, p.id)); if (p.mode === 'stand') p.action = { kind: 'wave', t0: W.T, dur: 1.4 }; } });
     }
     if (p.goal || p.busy || p.mode === 'walk' || p.mode === 'hop' || p.mode === 'lie' || W.T < (p.nextAct || 0)) continue;
     if (p.hugT && W.T - p.hugT < 6) { p.nextAct = W.T + 4; continue; }
     p.nextAct = W.T + rand(12, 26);
     if (p.mode === 'sit') { p.mode = 'stand'; p.z = 0; if (p.seatStand) { p.x = p.seatStand[0]; p.y = p.seatStand[1]; } p.seatStand = null; }
     const r = Math.random();
+    // chatty people come and find you
+    if (r < 0.3 && personaOf(W, p.id).t.chat >= 3 && rooms.includes(W.room) && W.room !== p.room && Math.random() < 0.6) { const t = nav(W.room).randomFree(1)[0]; travel(W, p, { room: W.room, x: t[0], y: t[1] }); continue; }
     if (r < 0.25) { const to = pick(rooms.filter(x => x !== p.room)); const t = nav(to).randomFree(1)[0]; travel(W, p, { room: to, x: t[0], y: t[1] }); continue; }
     const seats = Object.keys(SEATS).filter(k => k.startsWith(p.room + ':')).map(k => SEATS[k]).filter(s => !Object.values(W.people).some(q => q !== p && q.room === p.room && q.mode === 'sit' && dist([q.x, q.y], s.seat) < 0.4));
     if (r < 0.55 && seats.length) { sitOn(W, p, pick(seats)); continue; }
@@ -152,8 +154,8 @@ function Keyboard({ onKey }) {
 export const prettyName = s => (s ? s[0] + s.slice(1).toLowerCase() : '');
 export function CreatorPanel({ W, T, onMake, onClose, edit }) {
   const old = edit ? folkDef(W, edit) : null;
-  const [d, setD] = useState(() => old ? { name: old.name.toUpperCase(), body: old.body, skin: old.skin, hair: old.hair, hairCol: old.hairCol, glasses: !!old.glasses, beard: !!old.beard, voice: old.voice || 'high', top: old.top || (old.outfit && old.outfit.top) || 'tee', color: old.color || (old.outfit && old.outfit.color) || BRIGHT[0] }
-    : { name: '', body: 'kid', skin: pick(SKINS), hair: pick(['pony', 'long', 'short', 'curly']), hairCol: pick(HAIR_COLS.slice(0, 5)), glasses: false, beard: false, voice: 'high', top: pick(['tee', 'dress', 'hoodie']), color: pick(BRIGHT) });
+  const [d, setD] = useState(() => old ? { name: old.name.toUpperCase(), body: old.body, skin: old.skin, hair: old.hair, hairCol: old.hairCol, glasses: !!old.glasses, beard: !!old.beard, voice: old.voice || 'high', top: old.top || (old.outfit && old.outfit.top) || 'tee', color: old.color || (old.outfit && old.outfit.color) || BRIGHT[0], traits: old.traits || randomTraits(), likes: old.likes || randomLikes() }
+    : { name: '', body: 'kid', skin: pick(SKINS), hair: pick(['pony', 'long', 'short', 'curly']), hairCol: pick(HAIR_COLS.slice(0, 5)), glasses: false, beard: false, voice: 'high', top: pick(['tee', 'dress', 'hoodie']), color: pick(BRIGHT), traits: randomTraits(), likes: randomLikes() });
   const [home, setHome] = useState(old ? old.fam : freePlot(W) >= 0 ? 'new' : 'home');
   const [house, setHouse] = useState('terrace');
   const set = (k, v, word) => { setD(o => ({ ...o, [k]: v })); if (word) speak(word, 'word'); SFX.pop(); };
@@ -186,6 +188,7 @@ export function CreatorPanel({ W, T, onMake, onClose, edit }) {
           <button className="tile word-tile" aria-pressed={d.voice === 'low'} onClick={() => { set('voice', 'low'); later0(() => speak(`Hello! I am ${name || 'new'}!`, '__new')); }}>low voice</button>
         </div></div>
         <div className="opt-row"><h3>Clothes</h3><div className="choices">{TOPS.map(t => <button key={t} className="tile word-tile" aria-pressed={d.top === t} onClick={() => set('top', t, t === 'tee' ? 'T-shirt' : t === 'flannel' ? 'shirt' : t)}>{t === 'tee' ? 'T-shirt' : t === 'flannel' ? 'shirt' : t}</button>)}</div>{sw('color', BRIGHT)}</div>
+        <div className="opt-row"><h3>Personality</h3><TraitPicker t={d.traits} likes={d.likes} who={name} onT={t => setD(o => ({ ...o, traits: t }))} onLikes={l => setD(o => ({ ...o, likes: l }))} /></div>
         <div className="opt-row"><h3>Home</h3><div className="choices">
           <button className="tile word-tile" disabled={freePlot(W) < 0} aria-pressed={home === 'new'} onClick={() => { setHome('new'); speak('A new house!', 'narrator'); }}>new house</button>
           <button className="tile word-tile" aria-pressed={home === 'home'} onClick={() => { setHome('home'); speak("Callie's house", 'narrator'); }}>Callie's house</button>
@@ -200,7 +203,7 @@ export function CreatorPanel({ W, T, onMake, onClose, edit }) {
 const later0 = f => setTimeout(f, 120);
 
 /* ---------------- families: who lives where ---------------- */
-export function FamiliesPanel({ W, outfits, here, onVisit, onNew, onEdit, onClose }) {
+export function FamiliesPanel({ W, outfits, here, onVisit, onNew, onEdit, onAbout, onClose }) {
   const [editing, setEditing] = useState(false);
   const homeJoin = Object.values(W.folk.people).filter(p => p.fam === 'home').map(p => p.id);
   const fams = [{ id: 'home', place: 'home', name: 'Callie', members: [...CALLIE_FAM, ...homeJoin], look: { wall: '#e2b06a', roof: '#9a4a3a' } },
@@ -211,11 +214,11 @@ export function FamiliesPanel({ W, outfits, here, onVisit, onNew, onEdit, onClos
       {fams.map(f => <div key={f.id} className="fam-card">
         {f.type ? <HouseIcon type={f.type} size={46} /> : <svg viewBox="-30 -34 60 50" width="46" height="40" aria-hidden="true"><path d="M-24,-6 L0,-28 L24,-6Z" fill={f.look.roof} /><rect x={-20} y={-7} width={40} height={22} fill={f.look.wall} /><rect x={-5} y={2} width={10} height={13} fill="#5a3d32" /></svg>}
         <button className="fam-name" onClick={() => speak(`${f.name}'s house`, 'narrator')}>{f.name}'s house</button>
-        <span className="fam-heads">{f.members.map(m => { const can = editing && isFolk(m); return <button key={m} className={'fam-head' + (can ? ' can-edit' : '')} onClick={() => { speak(NAMES[m], 'word'); if (can) onEdit(m); }} aria-label={can ? `Change ${NAMES[m]}` : NAMES[m]}><HeadIcon who={m} o={outfits[m] || DEFAULT_OUTFITS[m]} size={34} /><small>{NAMES[m]}</small>{can && <span className="pencil" aria-hidden="true">✎</span>}</button>; })}</span>
+        <span className="fam-heads">{f.members.map(m => { const can = editing; return <button key={m} className={'fam-head' + (can ? ' can-edit' : '')} onClick={() => { speak(NAMES[m], 'word'); if (can) { if (isFolk(m)) onEdit(m); else onAbout(m); } }} aria-label={can ? `Change ${NAMES[m]}` : NAMES[m]}><HeadIcon who={m} o={outfits[m] || DEFAULT_OUTFITS[m]} size={34} /><small>{NAMES[m]}</small>{can && <span className="pencil" aria-hidden="true">✎</span>}</button>; })}</span>
         {here === f.place ? <span className="here">You are here</span> : <button className="pill" onClick={() => onVisit(f.place)}>Visit</button>}
       </div>)}
     </div>
-    <div className="pair fam-actions">{Object.keys(W.folk.people).length > 0 && <button className={'pill' + (editing ? ' on' : '')} aria-pressed={editing} onClick={() => { setEditing(e => !e); speak(editing ? 'Done' : 'Tap someone to change them', 'narrator'); }}>{editing ? 'Stop changing' : 'Change someone'}</button>}<button className="done make-go" onClick={onNew}>Make a new person</button></div>
+    <div className="pair fam-actions">{<button className={'pill' + (editing ? ' on' : '')} aria-pressed={editing} onClick={() => { setEditing(e => !e); speak(editing ? 'Done' : 'Tap someone to change them', 'narrator'); }}>{editing ? 'Stop changing' : 'Change someone'}</button>}<button className="done make-go" onClick={onNew}>Make a new person</button></div>
     {editing && <small className="note">Tap someone with a pencil to change them.</small>}
   </div>;
 }
