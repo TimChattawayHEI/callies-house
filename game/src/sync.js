@@ -77,6 +77,8 @@ export function collect(W, N, side, hooks) {
     out.sky = { c: Math.round((W.clock || 0) * 10) / 10, w: W.weather ? W.weather.kind : 'sun', tp: W.timePick, wp: W.weatherPick, sp: W.seasonPick, l: W.lights || {} };
     out.hol = { hw: W.hw ? { stage: W.hw.stage, pumpkin: W.hw.pumpkin || null } : null, xm: W.xm ? { stage: W.xm.stage, tree: W.xm.tree || null } : null };
   }
+  for (const [id, m] of Object.entries(W.mood || {})) out['md~' + id] = m;
+  if (W.fights) out.fights = W.fights;
   out.who = { p: W.player, n: NAMES[W.player] || W.player };
   return out;
 }
@@ -144,6 +146,8 @@ export function applyEntity(W, N, side, key, v, hooks) {
     case 'o~': if (v && hooks.setOutfit) hooks.setOutfit(raw, v); return;
     case 'tr~': if (v) { W.traits[raw] = v; } return;
     case 'fr': if (v) W.friends = { ...v }; return;
+    case 'md~': if (v && W.mood) W.mood[raw] = v; return;
+    case 'fights': W.fights = v || []; return;
     case 'sky': if (v) {
       if (Math.abs((W.clock || 0) - v.c) > 0.3 && Math.abs((W.clock || 0) - v.c) < 23.7) W.clock = v.c;
       if (W.weather) W.weather.kind = v.w; W.timePick = v.tp; W.weatherPick = v.wp; if (v.sp) W.seasonPick = v.sp; W.lights = v.l || {};

@@ -241,7 +241,7 @@ export function stepSocial(W, fx) {
   if (W.T < W.socialNext || !npcs.length || here.length < 2) return;
   W.socialNext = W.T + rand(10, 18);
   const a = weighted(npcs, p => 0.4 + personaOf(W, p.id).t.chat);
-  const others = here.filter(p => p !== a && (canWalk(W, a) || dist([a.x, a.y], [p.x, p.y]) < 4.5));
+  const others = here.filter(p => p !== a && !(W.fights || []).some(f => (f.a === a.id && f.b === p.id) || (f.a === p.id && f.b === a.id)) && (canWalk(W, a) || dist([a.x, a.y], [p.x, p.y]) < 4.5));
   if (!others.length) return;
   const b = weighted(others, p => 1 + Math.max(0, friendship(W, a.id, p.id)) * 0.4 + (p.id === W.player ? 1.2 : 0) + personaOf(W, a.id).likes.filter(l => personaOf(W, p.id).likes.includes(l)).length);
   const scene = pickScene(W, a.id, b.id);
@@ -291,7 +291,7 @@ export function TraitPicker({ t, likes, onT, onLikes, who }) {
     <div className="choices likes">{Object.keys(LIKES).map(k => <button key={k} className="tile like-tile" aria-pressed={likes.includes(k)} onClick={() => toggle(k)}><LikeIcon k={k} /><small>{LIKES[k].word}</small></button>)}</div>
   </div>;
 }
-export function AboutPanel({ W, who, head, onClose }) {
+export function AboutPanel({ W, who, head, extra, onClose }) {
   const [, force] = React.useState(0);
   const P = personaOf(W, who);
   const name = NAMES[who];
@@ -300,7 +300,7 @@ export function AboutPanel({ W, who, head, onClose }) {
   return <div className="sheet about" role="dialog" aria-label={`About ${name}`} onPointerDown={e => e.stopPropagation()}>
     <div className="box-head"><button className="room-chip" onClick={() => speak(`All about ${name}`, 'narrator')}>{head}About {name}</button><button className="done" onClick={onClose}>Done</button></div>
     <div className="about-body">
-      <div className="about-says">{lines.map((l, i) => <button key={i} className="about-line" onClick={() => speak(l, 'narrator')}>{l}</button>)}</div>
+      <div className="about-says">{extra}{lines.map((l, i) => <button key={i} className="about-line" onClick={() => speak(l, 'narrator')}>{l}</button>)}</div>
       <TraitPicker t={P.t} likes={P.likes} who={name} onT={t => update(t, P.likes)} onLikes={l => update(P.t, l)} />
     </div>
   </div>;

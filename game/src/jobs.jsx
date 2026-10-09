@@ -13,6 +13,8 @@ import { GROC } from './places.jsx';
 import { errandTodo } from './errands.js';
 import { petTodos } from './pets.jsx';
 import { tjTodo } from './townjobs.jsx';
+import { moodTodos } from './mood.jsx';
+import { whereNow } from './townlife.js';
 
 // Stickers. title: short words she can read. joke: the bit for whoever is reading with her. how: a tip if she has not got it yet.
 export const STICKERS = [
@@ -35,6 +37,9 @@ export const STICKERS = [
   { id: 'storm', icon: 'storm', title: 'Storm watcher', joke: 'Boom! Even Dad jumped.', how: 'Watch a thunderstorm. Count the flashes!' },
   { id: 'puddle', icon: 'puddle', title: 'Puddle jumper', joke: 'Splash! Wellies are best for this.', how: 'When it rains, go outside and jump in a puddle.' },
   { id: 'rainbow', icon: 'rainbow', title: 'Rainbow spotter', joke: 'Red, orange, yellow, green, blue and purple!', how: 'After the rain, look for a rainbow outside.' },
+  { id: 'levelup', icon: 'star', title: 'Level up!', joke: 'So happy they went up a level. Party hats on!', how: 'Help someone until their heart meter is full.' },
+  { id: 'favfood', icon: 'star', title: 'Favourite food', joke: 'You found their favourite food. Yum yum yum!', how: 'Feed someone their secret favourite food.' },
+  { id: 'makeup', icon: 'letter', title: 'Friends again', joke: 'Sorry said, hugs given. Best friends again!', how: 'Help two friends who fell out make up.' },
   { id: 'maker', icon: 'star', title: 'New friend', joke: 'Everyone say hello! The street just got bigger.', how: 'Tap Families and make a new person.' },
   { id: 'decor', icon: 'sofa', title: 'Home maker', joke: 'A new thing for the house. It looks great!', how: 'In a New Street house, tap Decorate and buy something.' },
   { id: 'makeover', icon: 'roller', title: 'Room makeover', joke: 'New walls! The whole family came to have a look.', how: 'Tap Decorate and change the walls or the floor.' },
@@ -141,6 +146,7 @@ export function todos(W) {
   if (job) list.push(job);
   for (const t of tjTodo(W)) list.push(t);
   for (const t of petTodos(W)) list.push(t);
+  for (const t of moodTodos(W, id => whereNow(W, id))) list.push(t);
   if (W.letter && (!W.out || W.fresh)) list.push({ id: 'letter', icon: 'letter', text: 'Read the letter', tip: W.fresh ? 'It is on the mat inside your front door.' : 'It is on the mat by the front door.' });
   const target = !W.fresh && HUNT_ORDER[W.hunt.idx];
   if (target) list.push({ id: 'hunt', icon: target, text: `Find the ${target}`, count: `${W.hunt.idx + 1}/${HUNT_ORDER.length}`, tip: whereIs(W, W.items.find(i => i.kind === target)) || 'Look all round the house!' });

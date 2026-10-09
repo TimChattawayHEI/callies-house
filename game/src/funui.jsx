@@ -98,9 +98,10 @@ export function Album({ photos, onClose }) {
 }
 
 /* ---------------- tap-a-person menu ---------------- */
-export function PersonMenu({ who, x, y, canHide, onHug, onHide, onEdit, onAbout, onClose }) {
+export function PersonMenu({ who, x, y, canHide, onHug, onCare, onHide, onEdit, onAbout, onClose }) {
   return <div className="pmenu" style={{ left: x, top: y }} onPointerDown={e => e.stopPropagation()}>
     <button className="pm" onClick={onHug}><svg viewBox="-12 -12 24 24" width="30" height="30"><path d="M0,10 C-13,1 -10,-10 0,-3 C10,-10 13,1 0,10Z" fill="#e86a92" /></svg><span>Hug</span></button>
+    {onCare && <button className="pm" onClick={onCare}><svg viewBox="-12 -12 24 24" width="30" height="30"><circle cx={-4} cy={3} r={6} fill="#e23b3b" /><circle cx={4} cy={3} r={6} fill="#e23b3b" /><path d="M0,-3 q1,-6 5,-8" stroke="#3f8a5a" strokeWidth={2} fill="none" /></svg><span>Snack</span></button>}
     {canHide && <button className="pm" onClick={onHide}><svg viewBox="-12 -12 24 24" width="30" height="30"><circle r="9" fill="#ffd45e" /><circle cx="-3" cy="-2" r="1.6" fill="#3b2a24" /><circle cx="3" cy="-2" r="1.6" fill="#3b2a24" /><path d="M-9,1 h18" stroke="#5a3d32" strokeWidth="3" /></svg><span>Hide and seek</span></button>}
     {onAbout && <button className="pm" onClick={onAbout}><svg viewBox="-12 -12 24 24" width="30" height="30"><circle r="10" fill="#ffd9a8" stroke="#e0a978" /><circle cx="-3.5" cy="-2" r="1.5" fill="#3b2a24" /><circle cx="3.5" cy="-2" r="1.5" fill="#3b2a24" /><path d="M-4.5,3 q4.5,4 9,0" stroke="#3b2a24" strokeWidth="1.5" fill="none" strokeLinecap="round" /></svg><span>About</span></button>}
     {onEdit && <button className="pm" onClick={onEdit}><svg viewBox="-12 -12 24 24" width="30" height="30"><path d="M-8,8 l2,-7 10,-10 5,5 -10,10z" fill="#5b9bd5" /><path d="M-8,8 l2,-7 5,5z" fill="#f6d2b8" /></svg><span>Change</span></button>}

@@ -34,6 +34,7 @@ import { startSession, pinRemote } from './sync.js';
 import { TogetherPanel, NetChip, JoinGate, startSharing, stopSharing } from './together.jsx';
 import { netReady } from './net.js';
 import { BackupPanel, autoBackup } from './backup.jsx';
+import { initMood, stepMood, moodOf, bubbleOf, NeedBubble, CarePanel, Meter, moodLines, feed as moodFeed, reactLine, dress as moodDress, befriend, played, makeUp, givePresent, startFight, foodWord } from './mood.jsx';
 import { setRels } from './relations.js';
 import { initTownLife, stepTownLife } from './townlife.js';
 import { initTownJobs, saveTownJobs, stepTownJobs, tjPickup, tjBought, tjGive, tjTap, tjSeen, tjShiftDone, tapLuckyCoin, ShiftPanel } from './townjobs.jsx';
@@ -197,6 +198,7 @@ function App() {
     }
   }
   if (!W.tj) { initTownJobs(W, saved); initTownLife(W); }
+  if (!W.mood) initMood(W, saved);
   // visiting another tablet: play the person picked when joining
   if (W.guest && !W.guestSet) {
     W.guestSet = true;
@@ -239,7 +241,7 @@ function App() {
   const c = player(W);
   const me = c.id;
   window.__back = () => { if (build) endBuild(); else if (panel) { if (panel.kind === 'book') closeBook(); else setPanel(null); } else if (petMenu) setPetMenu(null); else if (pmenu) setPmenu(null); else if (menu) setMenu(false); else if (packOpen) setPackOpen(false); else if (sel) setSel(null); };
-  if (window.__DEBUG) { window.__W = W; window.__tap = (h, pt) => onTap(h, pt || [960, 540]); window.__switch = id => switchTo(id); window.__pick = id => pickPlace(id); window.__ROOMS = ROOMS; window.__nav = nav; window.__openMap = () => openMap(); window.__buildHouse = buildHouse; window.__SEATS = SEATS; window.__goPlace = id => goPlace(id); window.__adopt = id => adopt(W, id); window.__worldsUI = () => setWorlds('menu'); window.__buildShop = (t, p, n) => buildShop(W, t, n || SHOP_TYPES[t].names[0], SHOP_TYPES[t].sign, p); window.__give = (who, id) => give(who, W.items.find(i => i.id === id)); window.__makePerson = (name, body, home) => makePerson({ name, body, skin: '#f1c7a5', hair: 'pony', hairCol: '#6b4423', glasses: false, beard: false, voice: 'high', top: 'tee', color: '#5b9bd5', traits: randomTraits(), likes: randomLikes(), house: 'terrace', rels: {}, outfit: outfitFor(body, 'tee', '#5b9bd5') }, home); window.__net = () => W.net; }
+  if (window.__DEBUG) { window.__W = W; window.__tap = (h, pt) => onTap(h, pt || [960, 540]); window.__switch = id => switchTo(id); window.__pick = id => pickPlace(id); window.__ROOMS = ROOMS; window.__nav = nav; window.__openMap = () => openMap(); window.__buildHouse = buildHouse; window.__SEATS = SEATS; window.__goPlace = id => goPlace(id); window.__adopt = id => adopt(W, id); window.__worldsUI = () => setWorlds('menu'); window.__buildShop = (t, p, n) => buildShop(W, t, n || SHOP_TYPES[t].names[0], SHOP_TYPES[t].sign, p); window.__give = (who, id) => give(who, W.items.find(i => i.id === id)); window.__makePerson = (name, body, home) => makePerson({ name, body, skin: '#f1c7a5', hair: 'pony', hairCol: '#6b4423', glasses: false, beard: false, voice: 'high', top: 'tee', color: '#5b9bd5', traits: randomTraits(), likes: randomLikes(), house: 'terrace', rels: {}, outfit: outfitFor(body, 'tee', '#5b9bd5') }, home); window.__net = () => W.net; window.__care = id => setPanel({ kind: 'care', id }); window.__need = (id, kind) => { moodOf(W, id).need = { kind, t0: W.T }; }; window.__fight = (a, b) => startFight(W, a, b, moodFx); window.__mood = id => moodOf(W, id); }
 
   useEffect(() => { const r = () => setSize({ w: window.innerWidth, h: window.innerHeight }); window.addEventListener('resize', r); return () => window.removeEventListener('resize', r); }, []);
   useEffect(() => { const h = setTimeout(() => setHint(false), 12000); return () => clearTimeout(h); }, []);
@@ -254,7 +256,7 @@ function App() {
 
   W.panelOpen = !!panel;
   // saving
-  const saveObj = () => ({ items: W.items.map(({ id, kind, c: col, stripe, fillings: f, room, loc, rot, home, quest, layers, forWho, errand, label, bought }) => ({ id, kind, c: col, stripe, fillings: f, room, loc, rot, home, quest, layers, forWho, errand, label, bought })), hw: { stage: W.hw.stage, year: W.hw.year, pumpkin: W.hw.pumpkin }, xm: { stage: W.xm.stage, year: W.xm.year, tree: W.xm.tree }, asks: { ducks: { state: W.asks.ducks.state, who: W.asks.ducks.who }, school: { state: W.asks.school.state } }, uniform: W.uniform, spiderN: W.spiderN, seasonPick: W.seasonPick, folk: W.folk, sky: skySave(W), coins: W.coins, wardrobe: W.wardrobe, ach: W.ach, visited: W.visited, outfits: st.current.outfits, hunt: W.hunt, quests: W.quests, errand: W.errand, errN: W.errN, traits: W.traits, friends: W.friends, pets: savePets(W), town: W.town, tj: saveTownJobs(W), fresh: W.fresh, owner: W.owner, player: W.fresh || W.guest ? W.player : undefined, worldName: W.worldName, met: W.met, lettersRead: W.lettersRead, letter: W.letter, goalUp: W.goal.up, lights: W.flags.lights, blind: W.flags.blind, muted: st.current.muted, voice: st.current.voice });
+  const saveObj = () => ({ items: W.items.map(({ id, kind, c: col, stripe, fillings: f, room, loc, rot, home, quest, layers, forWho, errand, label, bought }) => ({ id, kind, c: col, stripe, fillings: f, room, loc, rot, home, quest, layers, forWho, errand, label, bought })), hw: { stage: W.hw.stage, year: W.hw.year, pumpkin: W.hw.pumpkin }, xm: { stage: W.xm.stage, year: W.xm.year, tree: W.xm.tree }, asks: { ducks: { state: W.asks.ducks.state, who: W.asks.ducks.who }, school: { state: W.asks.school.state } }, uniform: W.uniform, spiderN: W.spiderN, seasonPick: W.seasonPick, folk: W.folk, sky: skySave(W), coins: W.coins, wardrobe: W.wardrobe, ach: W.ach, visited: W.visited, outfits: st.current.outfits, hunt: W.hunt, quests: W.quests, errand: W.errand, errN: W.errN, traits: W.traits, friends: W.friends, pets: savePets(W), town: W.town, tj: saveTownJobs(W), mood: W.mood, fights: W.fights, fresh: W.fresh, owner: W.owner, player: W.fresh || W.guest ? W.player : undefined, worldName: W.worldName, met: W.met, lettersRead: W.lettersRead, letter: W.letter, goalUp: W.goal.up, lights: W.flags.lights, blind: W.flags.blind, muted: st.current.muted, voice: st.current.voice });
   const saveNow = () => {
     if (window.__restoring) return; // a backup is being loaded: don't write the old game over it
     store(SAVE_KEY, saveObj());
@@ -320,6 +322,7 @@ function App() {
     stepPets(W, dt, petFx);
     stepTownLife(W, {});
     stepTownJobs(W, dt, tjFx);
+    stepMood(W, moodFx);
     stepSocial(W, (kind, id) => { const p = W.people[id]; if (p && p.room === W.room) burst(W, kind, headAt(p), kind === 'hearts' ? {} : { n: 10, spread: 80 }); });
     stepSky(W, dt);
     stepStink();
@@ -1282,7 +1285,50 @@ function App() {
     if (W.hide && W.hide.who === id && W.hide.phase === 'seek') { foundHider(W, q => { burst(W, 'confetti', headAt(q)); showToast(`You found ${NAMES[id]}!`); }); return; }
     const mine = inPack().find(i => i.quest === id);
     if (mine) { give(id, mine); return; }
+    if (bubbleOf(W, id) && !(W.net && W.net.other.player === id)) { SFX.pop(); setPanel({ kind: 'care', id }); return; }
     setPmenu({ who: id });
+  }
+  /* ----- happiness, needs and making up ----- */
+  const here = id => W.people[id] && W.people[id].room === W.room;
+  const moodFx = {
+    levelUp: (id, lvl) => { SFX.fanfare(); showToast(`${NAMES[id]} went up to level ${lvl}!`); const p = W.people[id]; if (here(id)) { burst(W, 'confetti', headAt(p)); say(W, id, 'I went up a level!'); if (p.mode === 'stand') p.action = { kind: 'cheer', t0: W.T, dur: 1.6 }; } },
+    fight: (a, b) => { if (here(a) || here(b)) { const p = W.people[here(a) ? a : b]; burst(W, 'spark', headAt(p), { n: 8, spread: 50 }); } },
+    madeUp: (a, b) => { summon(b, a); later(W, 0.8, () => { for (const id of [a, b]) { const p = W.people[id]; if (here(id)) { burst(W, 'hearts', headAt(p)); if (p.mode === 'stand') p.action = { kind: 'cheer', t0: W.T, dur: 1.4 }; } } if (here(a)) say(W, a, `Sorry, ${NAMES[b]}!`); later(W, 1.6, () => { if (here(b)) say(W, b, 'Friends again!'); }); SFX.sparkle(); showToast(`${NAMES[a]} and ${NAMES[b]} are friends again!`); }); },
+  };
+  // bring someone over to where she is (for meeting a friend or making up)
+  function summon(id, near) {
+    const q = W.people[id], n = W.people[near] || c; if (!q || q.room === W.room || id === W.player || (W.net && W.net.other.player === id)) return;
+    if (isFolk(id) || W.out) {
+      if (!isFolk(id)) return;
+      const [x, y] = nav(W.room).nearestFree(n.x + 0.9, n.y + 0.4);
+      Object.assign(q, { room: W.room, x, y, z: 0, mode: 'stand', path: null, goal: null, then: null, op: 1, seat: null, seatStand: null, action: { kind: 'wave', t0: W.T, dur: 1.2 } });
+      q.trip = { place: (W.out && W.out.place) || 'visit', room: W.room, until: W.T + 70 };
+    } else if (inHouse(q) && !ROOMS[W.room].town) { const [x, y] = nav(W.room).nearestFree(n.x + 0.9, n.y + 0.4); travel(W, q, { room: W.room, x, y }); }
+  }
+  function careDo(id, what, arg) {
+    const p = W.people[id];
+    const cheer = () => { if (p && p.mode === 'stand') p.action = { kind: 'cheer', t0: W.T, dur: 1.4 }; };
+    setPanel(null);
+    if (what === 'eat') {
+      const how = moodFeed(W, id, arg, moodFx);
+      if (p && p.mode === 'stand') p.action = { kind: 'eat', t0: W.T, dur: 2 }; SFX.nom();
+      later(W, 2.1, () => {
+        say(W, id, reactLine(id, arg, how));
+        if (how === 'fav') { SFX.fanfare(); burst(W, 'confetti', headAt(p)); cheer(); showToast(`${foodWord(arg)} is ${NAMES[id]}'s favourite food!`); }
+        else if (how === 'worst') { SFX.boing(); if (p.mode === 'stand') p.action = { kind: 'nose', t0: W.T, dur: 2 }; showToast(`${NAMES[id]} does not like ${foodWord(arg)}!`); }
+        else burst(W, 'hearts', headAt(p));
+      });
+    } else if (what === 'dress') {
+      const { word, ...o } = arg; setOutfits(os => ({ ...os, [id]: o })); moodDress(W, id, moodFx);
+      SFX.sparkle(); burst(W, 'spark', headAt(p), { n: 12, spread: 80 }); cheer(); later(W, 0.6, () => say(W, id, `I love my ${word}!`));
+    } else if (what === 'friend') {
+      befriend(W, id, arg, moodFx); summon(arg, id); SFX.sparkle();
+      later(W, 0.8, () => { say(W, id, `Hi, ${NAMES[arg]}! Be my friend?`); cheer(); later(W, 1.8, () => { if (here(arg)) { say(W, arg, 'Yes! Friends!'); burst(W, 'hearts', headAt(W.people[arg])); } }); });
+      showToast(`${NAMES[id]} and ${NAMES[arg]} are friends!`);
+    } else if (what === 'played') { played(W, id, moodFx); SFX.fanfare(); cheer(); burst(W, 'confetti', headAt(p)); say(W, id, 'That was fun! Thank you!'); }
+    else if (what === 'makeup') makeUp(W, id, moodFx);
+    else if (what === 'present') { givePresent(W, id, arg); SFX.fanfare(); cheer(); burst(W, 'confetti', headAt(p)); say(W, id, `A ${foodWord(arg)}! I love it!`); }
+    W.dirty = true;
   }
   function hugPerson(id) {
     const p = W.people[id];
@@ -1406,6 +1452,7 @@ function App() {
     if (build) { buildTap(hit, pt); return; }
     if (c.mode === 'ride') { endRide(); return; }
     if (hit && hit.startsWith('npc:')) { npcTap(hit.slice(4)); return; }
+    if (hit && hit.startsWith('need:')) { const id = hit.slice(5); SFX.pop(); speak(NAMES[id], 'word'); setPanel({ kind: 'care', id }); return; }
     const L = roomLayers(W.room);
     const itemOf = key => L.items.find(i => i.key === key);
     if (sel) { placeSelected(hit, pt, hit && hit.startsWith('obj:') ? itemOf(hit.slice(4)) : null); return; }
@@ -1555,6 +1602,7 @@ function App() {
   for (const cr of W.critters) if (cr.room === R) { const g = P(cr.x, cr.y, cr.z), sh = P(cr.x, cr.y, 0); dyn.push({ key: 'critter' + cr.id, x: cr.x, y: cr.y, z: 0, el: <g data-hit={'critter:' + cr.id} style={{ cursor: 'pointer' }}>
     {cr.kind !== 'balloon' && <ellipse cx={sh[0]} cy={sh[1] + 2} rx={cr.kind === 'cat' ? 26 : 13} ry={cr.kind === 'cat' ? 7 : 4} fill="rgba(60,30,10,.14)" />}
     <g transform={`translate(${g[0]} ${g[1]})`}><circle r={34} cy={-16} fill="transparent" /><g transform="scale(1.5)"><CritterArt c={cr} T={T} /></g></g></g> }); }
+  const needEls = Object.values(W.people).filter(p => p.room === R && p.op > 0.5 && !p.hiding && p.id !== W.player && bubbleOf(W, p.id) && !(W.net && W.net.other.player === p.id)).map(p => { const h = headAt(p); return <g key={'need' + p.id} data-hit={'need:' + p.id}><NeedBubble kind={bubbleOf(W, p.id)} x={h[0] + 86} y={h[1]} T={T} outfit={dressed(W, outfits)[p.id]} /></g>; });
   if (W.coinSpot && W.coinSpot.room === R) { const g = P(W.coinSpot.x, W.coinSpot.y, 0.15 + Math.abs(Math.sin(T * 3)) * 0.1); dyn.push({ key: 'luckycoin', x: W.coinSpot.x, y: W.coinSpot.y, z: 0, el: <g data-hit="luckycoin" style={{ cursor: 'pointer' }} transform={`translate(${g[0]} ${g[1]})`}><circle r={30} fill="transparent" /><ellipse cx={0} cy={0} rx={13 * Math.abs(Math.cos(T * 2.5)) + 2} ry={13} fill="#f2c94c" stroke="#d9a92c" strokeWidth={3} /><path d="M-16,-18 l3,6 M16,-16 l-4,5 M0,-24 v6" stroke="#ffe9a8" strokeWidth={3} strokeLinecap="round" opacity={0.6 + 0.4 * Math.sin(T * 6)} /></g> }); }
   if (W.letter && R === (W.letter.room || 'downhall')) { const g = P(W.letter.x, W.letter.y, 0); dyn.push({ key: 'letter', x: W.letter.x, y: W.letter.y, z: 0, el: <g data-hit="letter" style={{ cursor: 'pointer' }} transform={`translate(${g[0]} ${g[1]})`}><circle r={30} cy={-4} fill="transparent" /><g transform={`translate(0 ${-Math.abs(Math.sin(T * 3)) * 4})`}><LetterArt /></g></g> }); }
   for (const it of W.items) {
@@ -1629,6 +1677,7 @@ function App() {
         {buildHere && <BuildMarker piece={selPiece} rug={selRug} T={T} />}
         {ov.top}
         <Effects fx={W.fx} T={T} room={R} />
+        {needEls}
         <rect x={-8000} y={-8000} width={20000} height={20000} fill="#1a1c3d" opacity={dim} pointerEvents="none" />
         {dim > 0.05 && R === 'callie' && W.people.callie.mode === 'lie' && W.people.callie.room === 'callie' && <ellipse cx={P(2.25, 1.05, 1)[0]} cy={P(2.25, 1.05, 1)[1]} rx={200} ry={120} fill="url(#tabglow)" opacity={(W.people.callie.tablet || 0) * 0.5} pointerEvents="none" />}
         {R === 'callie' && W.people.callie.mode === 'lie' && W.people.callie.sleep && [0, 1, 2].map(i => { const ph = (T * 0.6 + i / 3) % 1, b = P(2.6, 1.0, 1.4); return <text key={i} x={b[0] + 20 + ph * 40} y={b[1] - ph * 90} fontSize={22 + ph * 18} fontFamily="'Andika','Baloo 2',sans-serif" fontWeight="700" fill="#fff6d8" opacity={Math.sin(ph * Math.PI)} pointerEvents="none">z</text>; })}
@@ -1717,7 +1766,8 @@ function App() {
     {panel && panel.kind === 'clothes' && <ShopPanel people={rowIds()} me={me} outfits={dressed(W, outfits)} wardrobe={W.wardrobe} coins={W.coins} start={panel.cat} T={T} onBuy={shopBuy} onWear={(who, it) => shopWear(who, it)} onClose={() => { setPanel(null); SFX.zip(); }} />}
     {panel && panel.kind === 'fams' && <FamiliesPanel W={W} outfits={dressed(W, outfits)} here={W.out ? W.out.place : 'home'} onClose={() => { setPanel(null); SFX.zip(); }} onNew={() => setPanel({ kind: 'maker' })} onEdit={id => setPanel({ kind: 'maker', edit: id })} onAbout={id => setPanel({ kind: 'about', who: id, back: 'fams' })} onVisit={place => { setPanel({ kind: 'map', here: W.out ? W.out.place : 'home', picked: place }); later(W, 0.5, () => goPlace(place)); }} />}
     {panel && panel.kind === 'maker' && <CreatorPanel key={panel.edit || 'new'} W={W} T={T} edit={panel.edit} onClose={() => setPanel(panel.edit ? { kind: 'fams' } : null)} onMake={panel.edit ? (d, home) => savePerson(panel.edit, d, home) : makePerson} />}
-    {panel && panel.kind === 'about' && <AboutPanel key={panel.who} W={W} who={panel.who} head={<HeadIcon who={panel.who} o={dressed(W, outfits)[panel.who] || DEFAULT_OUTFITS[panel.who]} size={30} />} onClose={() => { setPanel(panel.back ? { kind: panel.back } : null); SFX.zip(); }} />}
+    {panel && panel.kind === 'care' && W.people[panel.id] && <CarePanel key={panel.id} W={W} id={panel.id} outfits={dressed(W, outfits)} people={Object.keys(W.people).filter(k => NAMES[k] && W.people[k].room && !['nanny', 'grandad'].includes(k))} onClose={() => { setPanel(null); SFX.zip(); }} onDo={(what, arg) => careDo(panel.id, what, arg)} />}
+    {panel && panel.kind === 'about' && <AboutPanel key={panel.who} W={W} who={panel.who} extra={<><Meter m={moodOf(W, panel.who)} />{moodLines(W, panel.who).map((l, i) => <button key={i} className="about-line" onClick={() => speak(l, 'narrator')}>{l}</button>)}</>} head={<HeadIcon who={panel.who} o={dressed(W, outfits)[panel.who] || DEFAULT_OUTFITS[panel.who]} size={30} />} onClose={() => { setPanel(panel.back ? { kind: panel.back } : null); SFX.zip(); }} />}
     {panel && panel.kind === 'petshop' && <PetShopPanel W={W} T={T} start={panel.cat} onClose={() => { setPanel(null); SFX.zip(); }} onAdopt={id => { const ok = adopt(W, id); if (ok) { const d = defOf({ id }); SFX.coins(); later(W, 0.3, () => SFX.fanfare()); showToast(`${d.name} is coming home!`); speak(`${d.name} is coming home with you!`, 'narrator'); } return ok; }} />}
     {panel && panel.kind === 'petfood' && <PetFoodPanel key={panel.ids.join()} W={W} ids={panel.ids} onClose={() => setPanel(null)} onFeed={f => petFeed(panel.ids, f)} />}
     {panel && panel.kind === 'townshop' && W.town.shops[panel.id] && <ShopBuyPanel W={W} sh={W.town.shops[panel.id]} onShift={() => setPanel({ kind: 'shift', id: panel.id })} onCollect={() => { const sh = W.town.shops[panel.id], n = Math.floor(sh.till || 0); sh.till -= n; earn(W, n); SFX.coins(); showToast(`You collected ${n} coins!`); speak(`${n} coins!`, 'narrator'); setFrame(f => f + 1); }} onBuy={t => buyThing(W.town.shops[panel.id], t)} onClose={() => { setPanel(null); SFX.zip(); }} />}
@@ -1743,7 +1793,7 @@ function App() {
       return <PetMenu x={clamp(s[0], 130, size.w - 130)} y={clamp(s[1] - 20, 120, size.h - 120)} title={title} buttons={buttons} onClose={() => setPetMenu(null)} />;
     })()}
     {pmenu && (() => { const p = W.people[pmenu.who]; if (!p || p.room !== R) return null; const s = toScreen(headAt(p)); const free = !W.hide && !p.busy && !(p.id === 'dad' && p.job) && p.mode !== 'lie';
-      return <PersonMenu who={pmenu.who} x={clamp(s[0], 110, size.w - 110)} y={clamp(s[1] - 20, 120, size.h - 120)} canHide={free && !GRAND_HUGS[pmenu.who] && !isFolk(pmenu.who)} onClose={() => setPmenu(null)} onHug={() => hugPerson(pmenu.who)} onEdit={isFolk(pmenu.who) ? () => { setPmenu(null); setPanel({ kind: 'maker', edit: pmenu.who }); } : null} onAbout={() => { setPmenu(null); setPanel({ kind: 'about', who: pmenu.who }); }} onHide={() => { setPmenu(null); startHide(W, pmenu.who); }} />; })()}
+      return <PersonMenu who={pmenu.who} x={clamp(s[0], 110, size.w - 110)} y={clamp(s[1] - 20, 120, size.h - 120)} canHide={free && !GRAND_HUGS[pmenu.who] && !isFolk(pmenu.who)} onClose={() => setPmenu(null)} onHug={() => hugPerson(pmenu.who)} onCare={() => { setPmenu(null); setPanel({ kind: 'care', id: pmenu.who }); }} onEdit={isFolk(pmenu.who) ? () => { setPmenu(null); setPanel({ kind: 'maker', edit: pmenu.who }); } : null} onAbout={() => { setPmenu(null); setPanel({ kind: 'about', who: pmenu.who }); }} onHide={() => { setPmenu(null); startHide(W, pmenu.who); }} />; })()}
     {W.hide && W.hide.phase === 'count' && T > W.hide.t0 && <div className="countdown">{Math.min(10, Math.floor((T - W.hide.t0) / 0.55) + 1)}</div>}
     {W.photo && W.photo.stage === 'count' && T - W.photo.t0 < 2.4 && <div className="countdown">{3 - Math.floor((T - W.photo.t0) / 0.8)}</div>}
     {W.photo && W.photo.stage === 'gather' && <div className="photo-bar" onPointerDown={e => e.stopPropagation()}><span>Everyone get together!</span><button className="done" onClick={snapPhoto}>Snap!</button><button className="pill" onClick={() => setPanel({ kind: 'album' })}>Photos</button><button className="pill" onClick={cancelPhoto}>Cancel</button></div>}
