@@ -7,6 +7,11 @@ export const netReady = () => { const c = cfg(); return !!(c && c.apiKey && c.da
 const base = () => cfg().databaseURL.replace(/\/+$/, '');
 const AUTH_KEY = 'callies-house-netauth';
 
+// the last thing that went wrong, so a grown-up can see why it won't connect
+let lastErr = null;
+export const netError = () => lastErr;
+const note = e => { lastErr = e && e.message ? e.message : String(e); };
+
 /* ---------------- signing in (anonymously) ---------------- */
 let auth = null, signing = null;
 const readAuth = () => { try { return JSON.parse(localStorage.getItem(AUTH_KEY) || 'null'); } catch (e) { return null; } };
@@ -34,7 +39,7 @@ async function signIn() {
 }
 export async function token(force) {
   if (!force && auth && auth.exp - Date.now() > 5 * 60 * 1000) return auth.idToken;
-  if (!signing) signing = signIn().finally(() => { signing = null; });
+  if (!signing) signing = signIn().then(a => { lastErr = null; return a; }, e => { note(Object.assign(e, { message: 'Sign-in: ' + e.message })); throw e; }).finally(() => { signing = null; });
   return (await signing).idToken;
 }
 export const myUid = () => (auth && auth.uid) || (readAuth() || {}).uid || null;
@@ -47,7 +52,7 @@ export async function db(method, path, body) {
     const quiet = method !== 'GET' ? '&print=silent' : '';
     const r = await fetch(`${base()}/${path}.json?auth=${encodeURIComponent(t)}${quiet}`, { method, body: body === undefined ? undefined : JSON.stringify(body) });
     if (r.status === 401 && tries === 0) continue;
-    if (!r.ok) throw Object.assign(new Error(`database ${method} ${r.status}`), { status: r.status });
+    if (!r.ok) { const e = Object.assign(new Error(`Database ${r.status === 401 ? 'said no (check the rules)' : 'error ' + r.status}`), { status: r.status }); note(e); throw e; }
     if (r.status === 204 || method !== 'GET') return null;
     return r.json();
   }
@@ -72,7 +77,7 @@ export function listen(path, onEvent, onState) {
     const again = force => { if (es) es.close(); es = null; onState && onState(false); if (!closed) timer = setTimeout(() => open(force), Math.min(15000, 800 * 2 ** retry++)); };
     es.addEventListener('auth_revoked', () => again(true));
     es.addEventListener('cancel', () => again(true));
-    es.onerror = () => { if (es && es.readyState === 2) again(false); else onState && onState(false); };
+    es.onerror = () => { note(new Error('Lost the live connection')); if (es && es.readyState === 2) again(false); else onState && onState(false); };
     // tokens last an hour: reconnect with a fresh one before then
     clearTimeout(refresh); refresh = setTimeout(() => again(true), 45 * 60 * 1000);
   };

@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { SFX, speak } from './core.js';
 import { HeadIcon, NAMES, DEFAULT_OUTFITS } from './people.jsx';
 import { Keyboard, registerPerson } from './folk.jsx';
-import { netReady, db, token, goodCode, newCode } from './net.js';
+import { netReady, db, token, goodCode, newCode, netError } from './net.js';
 import { currentWorld, joinCodeOf, joinWorld, netOf, setNet, switchWorld, SAVE_KEY } from './worlds.jsx';
 
 const FAMILY = ['callie', 'chloe', 'mum', 'dad', 'connor'];
@@ -25,7 +25,7 @@ export function TogetherPanel({ W, status, other, onShare, onStop, onClose, save
     if (!goodCode(typing)) { setErr('Type all 6 letters of the code.'); return; }
     setErr('Looking...');
     try { await token(); const meta = await db('GET', `rooms/${typing}/meta`); if (!meta) { setErr('There is no game with that code. Check the letters.'); return; } SFX.sparkle(); joinWorld(typing, meta.world ? `${meta.world} with ${meta.name || 'a friend'}` : 'Playing together', saveNow); }
-    catch (e) { setErr('Could not reach the internet. Check the wi-fi and try again.'); }
+    catch (e) { setErr(e && e.status === 401 ? 'Firebase said no. Check the database rules.' : `Could not connect (${(e && e.message) || 'no internet'}). Check the wi-fi and try again.`); }
   };
   const line = status === 'together' ? `Playing with ${otherName || 'the other tablet'}!` : status === 'waiting' ? 'Waiting for the other tablet...' : status === 'connecting' ? 'Connecting...' : null;
   return <div className="sheet together" role="dialog" aria-label="Play together" onPointerDown={e => e.stopPropagation()}>
@@ -43,6 +43,7 @@ export function TogetherPanel({ W, status, other, onShare, onStop, onClose, save
             <p className="nt-say">On the other tablet: <b>Play together</b>, then type:</p>
             <CodeBoxes code={net.code} />
             {line && <p className={'nt-status ' + status}>{line}</p>}
+            {status === 'connecting' && netError() && <p className="nt-err">{netError()}</p>}
             <button className="pill" onClick={onStop}>Stop sharing</button>
           </> : <button className="done" onClick={onShare}>Share this world</button>}
         </div>
