@@ -79,6 +79,9 @@ export async function backupNow() {
       await n.share.share({ title: `${APP} backup`, text: `${APP} backup, ${new Date(b.at).toLocaleDateString()}`, url: uri, dialogTitle: 'Keep the backup somewhere safe' });
       shared = true;
     } catch (e) { /* share cancelled or not available */ }
+  } else if (window.claude && window.claude.use) {
+    // inside the Claude artifact viewer, plain downloads are blocked; it offers its own save
+    try { const dl = await window.claude.use('downloads'); if (dl) { await dl.save({ filename: name, data: text }); saved = true; } } catch (e) { /* declined or unavailable */ }
   } else {
     try {
       const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
