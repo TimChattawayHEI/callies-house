@@ -37,6 +37,11 @@ export function timeWord(h) { return h >= 5 && h < 12 ? 'morning' : h >= 12 && h
 const offOr = (W, id) => (W.people[id] && W.people[id].room === W.room ? null : { type: 'off', id });
 const grownUp = W => (W.player === 'mum' ? 'dad' : 'mum');
 
+// just the clock ticking (the visiting tablet uses this; the main tablet decides the rest)
+export function clockStep(W, dt) {
+  if (W.timePick === 'day') W.clock = 12; else if (W.timePick === 'night') W.clock = 22;
+  else if (!W.bedtime) W.clock = (W.clock + dt * (W.clock >= 20 || W.clock < 6 ? 2 : 1) / HOUR) % 24;
+}
 export function stepSky(W, dt) {
   if (W.morningFlash && W.morningFlash !== W.dayFlash) { W.dayFlash = W.morningFlash; newDay(W); }
   // the clock (nights go a bit quicker)

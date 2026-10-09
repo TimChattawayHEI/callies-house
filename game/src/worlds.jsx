@@ -35,6 +35,27 @@ export function newWorld(saveNow) {
   if (saveNow) saveNow();
   reloadInto(id);
 }
+// Play together: a world on the other tablet that this one joins with a code
+export const joinCodeOf = id => (id && id.startsWith('j-') ? id.slice(2) : null);
+export const isJoinWorld = () => !!joinCodeOf(currentWorld());
+export function joinWorld(code, name, saveNow) {
+  const w = worldList(), id = 'j-' + code;
+  const it = w.list.find(x => x.id === id);
+  if (it) { if (name) it.name = name; } else w.list.push({ id, name: name || 'Playing together', join: code });
+  write(LIST_KEY, w);
+  if (saveNow) saveNow();
+  if (currentWorld() === id) { try { sessionStorage.setItem(SKIP_KEY, '1'); } catch (e) { /* ignore */ } window.location.reload(); }
+  else reloadInto(id);
+}
+// the code this world uses when it is shared, and whether sharing is on
+export function netOf(id) { const it = worldList().list.find(x => x.id === id); return it ? { code: it.netCode || null, on: !!it.netOn } : { code: null, on: false }; }
+export function setNet(id, patch) {
+  const w = worldList(); let it = w.list.find(x => x.id === id);
+  if (!it && id === 'callie') { it = { id: 'callie', name: "Callie's House" }; w.list.unshift(it); }
+  if (!it) return;
+  if ('code' in patch) it.netCode = patch.code; if ('on' in patch) it.netOn = patch.on;
+  write(LIST_KEY, w);
+}
 export function nameWorld(id, name, heads) {
   const w = worldList(), it = w.list.find(x => x.id === id); if (!it) return;
   it.name = name; if (heads) it.heads = heads; write(LIST_KEY, w);
@@ -59,6 +80,7 @@ export function WorldPicker({ onPlay, onClose, saveNow, closable }) {
       <div className="world-list">
         {w.list.map(it => <div key={it.id} className={'world-card' + (it.id === cur ? ' on' : '')}>
           <span className="world-heads">{it.id === 'callie' ? ['callie', 'chloe', 'mum', 'dad', 'connor'].map(k => <HeadIcon key={k} who={k} o={DEFAULT_OUTFITS[k]} size={34} />)
+            : it.join ? <span className="world-new" aria-label="Playing together">⇄</span>
             : (it.heads || []).length ? it.heads.map((h, i) => <span key={i} className="world-dot" style={{ background: h }} />) : <span className="world-new">✦</span>}</span>
           <button className="world-name" onClick={() => speak(it.name, 'word')}>{it.name}</button>
           {it.id !== 'callie' && (sure === it.id ? <span className="pair"><button className="pill warn" onClick={() => { deleteWorld(it.id); setW(worldList()); setSure(null); }}>Yes, delete</button><button className="pill" onClick={() => setSure(null)}>No</button></span>

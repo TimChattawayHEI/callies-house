@@ -129,7 +129,7 @@ export function stepFolk(W) {
   const me = player(W), party = (W.out && W.out.party) || [];
   for (const def of Object.values(W.folk.people)) {
     const p = W.people[def.id];
-    if (!p || p.id === W.player || party.includes(p.id) || !p.room) continue;
+    if (!p || p.id === W.player || p.netRemote || party.includes(p.id) || !p.room) continue;
     const rooms = homeRooms(W, def);
     if (!rooms.includes(p.room)) continue;
     // say hello when someone comes into the room

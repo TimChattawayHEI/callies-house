@@ -99,7 +99,7 @@ function free(W, p) {
     && !(p.busy && p.busy !== 'out') && !(p.chatUntil > W.T) && !(p.id === 'dad' && p.job);
 }
 // Callie's own family stay put (other things rely on where they stand), everyone else can walk over.
-const canWalk = (W, p) => p.mode === 'stand' && p.id !== W.player && (!CALLIE_FAM.includes(p.id) || (W.out && (W.out.party || []).includes(p.id)));
+const canWalk = (W, p) => p.mode === 'stand' && p.id !== W.player && !p.netRemote && (!CALLIE_FAM.includes(p.id) || (W.out && (W.out.party || []).includes(p.id)));
 function face(p, q) { if (p.mode !== 'stand') return; p.facing = 'front'; p.flip = ((q.x - p.x) - (q.y - p.y)) < 0; }
 
 /* ---------------- the little scenes ---------------- */
@@ -227,7 +227,7 @@ export function stepSocial(W, fx) {
   if (!calm(W) || (W.chatting && W.T < W.chatting.until)) return;
   if (W.bubbles.some(bb => bb.anchor.type === 'person' && W.T - bb.t0 < 1.5)) return;
   const here = Object.values(W.people).filter(p => free(W, p));
-  const npcs = here.filter(p => p.id !== W.player);
+  const npcs = here.filter(p => p.id !== W.player && !p.netRemote);
   // on your own: bouncy people bounce, tidy people spot mess, grumpy people grumble
   if (W.T > W.soloNext && npcs.length) {
     W.soloNext = W.T + rand(25, 45);

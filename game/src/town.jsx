@@ -324,7 +324,7 @@ export function arriveAt(W, place, party = []) {
   const at = place === 'home' ? [1.075, 2.1] : door.at, inn = place === 'home' ? [1.6, 1.5] : door.in;
   W.room = rid; W.bubbles = W.bubbles.filter(b => b.anchor.type !== 'world'); W.fx = [];
   const put = (q, off, then) => { q.room = rid; q.x = at[0] + off[0]; q.y = at[1] + off[1]; q.z = 0; q.mode = 'stand'; q.path = null; q.goal = null; q.then = null; q.op = 1; q.seat = null; q.seatStand = null; q.reading = null; q.action = null; q.hiding = false; walkTo(W, q, ...nav(rid).nearestFree(inn[0] + off[0] * 0.5, inn[1] + off[1] * 0.5), then); };
-  put(c, [0, 0]);
+  put(c, W.guest ? (place === 'home' ? [0.5, 0.35] : [0.5, -0.25]) : [0, 0]); // the visiting tablet's person steps in beside, not on top
   const OFFS = place === 'home' ? [[0.4, -0.3], [0.5, 0.35]] : [[0.25, 0.45], [0.55, -0.2]];
   const ps = party.filter(id => id !== c.id).map(id => W.people[id]).filter(Boolean);
   ps.forEach((p, i) => put(p, OFFS[i % 2]));

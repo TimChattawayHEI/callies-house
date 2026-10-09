@@ -15,7 +15,7 @@ import { relsOf } from './relations.js';
 
 const nm = id => NAMES[id] || 'them';
 const famOf = (W, id) => { const d = W.folk.people[id]; return d && W.folk.fams[d.fam]; };
-const others = W => Object.keys(W.folk.people).filter(id => W.people[id] && id !== W.player && NAMES[id]);
+const others = W => Object.keys(W.folk.people).filter(id => W.people[id] && id !== W.player && !(W.net && W.net.other.player === id) && NAMES[id]);
 const shops = W => Object.values((W.town && W.town.shops) || {}).filter(sh => SHOP_TYPES[sh.type]);
 const shopThings = sh => sellsOf(sh.type).filter(t => t.kind);
 const LOST = [['keys', 'my keys'], ['phone', 'my phone'], ['specs', 'my glasses'], ['purse', 'my purse'], ['scarf', 'my scarf'], ['brush', 'my hairbrush'], ['football', 'my ball'], ['remote', 'the TV remote']];
@@ -80,8 +80,8 @@ const off = (W, id) => (W.people[id] && W.people[id].room === W.room ? null : { 
 export function stepTownJobs(W, dt, fx) {
   if (!W.tj) return;
   // shops take money while she plays
-  for (const sh of shops(W)) sh.till = Math.min(25, (sh.till || 0) + dt / 40);
-  if (!W.fresh || !W.owner) return;
+  if (!W.guest) for (const sh of shops(W)) sh.till = Math.min(25, (sh.till || 0) + dt / 40);
+  if ((!W.fresh || !W.owner) && !W.guest) return;
   // a lucky coin in town
   if (!W.coinSpot && W.T > W.coinNext && ROOMS[W.room] && (ROOMS[W.room].town || ROOMS[W.room].outdoor)) {
     W.coinNext = W.T + rand(70, 140);

@@ -37,6 +37,24 @@ Without it the workflow still runs but makes a debug build, and debug builds can
 2. Download the APK from the latest release (sign in to GitHub in Silk, since the repo is private)
 3. Open it and tap **Install**. Updates install the same way, and her progress is kept
 
+## Play together (two tablets, one world)
+
+The game talks to a free Firebase project so two tablets can play in the same world at once.
+One tablet shares its world (grown-ups menu, Play together, Share this world) and shows a 6-letter
+code; the other types the code to join. After that, both reconnect by themselves whenever the game is opened.
+
+Setting up Firebase (once):
+
+1. Go to console.firebase.google.com, add a project (Google Analytics is not needed).
+2. Build > Authentication > Get started > Sign-in method: turn on **Anonymous**.
+3. Build > Realtime Database > Create database, location **europe-west1**, start in **locked mode**.
+4. In the database's **Rules** tab, paste the contents of `firebase-rules.json` and publish.
+5. Project settings > General > Your apps > add a **Web** app. Copy `apiKey` and `databaseURL`
+   into `game/src/netcfg.js` and push. The next APK can play together.
+
+The main tablet runs the world (people, clock, weather). The visiting tablet plays one person and has
+its own coins, bag and stickers. Things, lights, new people, houses, shops and pets are shared both ways.
+
 ## Working on the game
 
 - `game/src/`: the game code (`app.jsx` is the main screen; `homes.jsx` and `builder.jsx` are New Street houses and decorating)

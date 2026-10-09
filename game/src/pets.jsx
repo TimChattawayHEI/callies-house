@@ -108,6 +108,15 @@ export function adopt(W, id) {
   return true;
 }
 
+// a pet adopted on the other tablet (play together)
+export function netAdoptPet(W, v) {
+  const def = BY_ID[v.id]; if (!def || W.pets.some(p => p.id === v.id)) return;
+  const H = HOMES[HOME_OF[def.kind]];
+  W.pets.push({ id: v.id, hunger: v.hunger || 0, walk: v.walk || 0, with: !!v.with, room: H.room, x: H.x + H.w / 2, y: H.y + H.d + 0.4, path: null, op: 1 });
+  if (!W.petDirt[HOME_OF[def.kind]]) W.petDirt[HOME_OF[def.kind]] = 0;
+  updateBlocks(W);
+}
+
 /* ---------------- moving about ---------------- */
 function goTo(p, x, y) {
   const path = nav(p.room).findPath([p.x, p.y], [x, y]);

@@ -22,6 +22,10 @@ export const HOMES = {
   chloe: { room: 'chloe', x: 2.35, y: 1.55, face: 'front' },
 };
 export const player = W => W.people[W.player];
+// things in this tablet's bag (when playing together, each tablet has its own bag)
+export const mySide = W => (W.guest ? 'g' : 'h');
+export const inMyBag = (W, it) => !!(it && it.loc && it.loc.s === 'pack' && (it.loc.by || 'h') === mySide(W));
+export const bagLoc = W => (W.guest ? { s: 'pack', by: 'g' } : { s: 'pack' });
 export const inHouse = p => !!(p.room && ROOMS[p.room]);
 // Beds anyone can lie on: where to stand, where to lie (x, y, height), which way the head points on screen.
 export const BEDS = {
@@ -407,21 +411,21 @@ export function update(W, dt, hooks) {
     }
   }
   if (W.out) { W.nextSpider = Math.max(W.nextSpider, T + 30); W.nextBell = Math.max(W.nextBell, T + 60); }
-  if (!W.bedtime && T > W.nextSpider && W.spiders.filter(s => !s.caught).length < 2) { spawnSpider(W); W.nextSpider = T + rand(70, 140); }
+  if (!W.guest && !W.bedtime && T > W.nextSpider && W.spiders.filter(s => !s.caught).length < 2) { spawnSpider(W); W.nextSpider = T + rand(70, 140); }
   // Connor through the ceiling
   const gaming = W.people.connor.room === 'connorRoom';
-  if (gaming && ROOMS[W.room].ceiling && !W.bedtime && T > W.nextCeiling) {
+  if (!W.guest && gaming && ROOMS[W.room].ceiling && !W.bedtime && T > W.nextCeiling) {
     W.nextCeiling = T + rand(14, 26);
     const n = 2 + Math.floor(Math.random() * 3);
     for (let i = 0; i < n; i++) { SFX.thud(i * 0.22); later(W, i * 0.22, () => { W.shake = 1; }); }
     const won = W.connorWins > 0; if (won) W.connorWins--;
     say(W, 'connor', won ? pick(['I WON!', 'YES! Champion!', 'Get in! I won!']) : pick(CONNOR_LINES), { type: 'ceiling', id: 'connor' }, { style: 'shout' });
   }
-  if (gaming && W.room === 'hallway' && !W.bedtime && T > W.nextMuffle) {
+  if (!W.guest && gaming && W.room === 'hallway' && !W.bedtime && T > W.nextMuffle) {
     W.nextMuffle = T + rand(22, 40);
     SFX.thud(); say(W, 'connor', pick(['Noooo!', 'Come on!', 'Rematch!']), { type: 'world', room: 'hallway', at: [0.97, 0, 2.6] }, { style: 'muffled' });
   }
-  if (!W.bedtime && T > W.nextBell && !W.parcel) { W.nextBell = T + rand(200, 320); ringDoorbell(W); }
+  if (!W.guest && !W.bedtime && T > W.nextBell && !W.parcel) { W.nextBell = T + rand(200, 320); ringDoorbell(W); }
   W.shake = Math.max(0, W.shake - dt * 4);
   // garden ball
   const b = W.ball;
