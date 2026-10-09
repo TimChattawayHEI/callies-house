@@ -69,11 +69,21 @@ jobs:
           name: callies-house-apk
           path: callies-house-*.apk
 
-      - name: Put it on the latest release
+      - name: Put it on a release
         env:
           GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: v1.0.${{ github.run_number }}
         run: |
-          gh release delete latest --yes --cleanup-tag || true
-          gh release create latest callies-house-*.apk \
+          # each build gets its own release (a release name can't always be reused), marked as the latest
+          gh release create "$TAG" callies-house-*.apk --target "${{ github.sha }}" \
             --title "Callie's House 1.0.${{ github.run_number }}" \
-            --notes "Download the APK on the tablet and open it to install or update. Her progress is kept."
+            --notes "Download the APK on the tablet and open it to install or update. Her progress is kept." --latest
+          id=$(gh api "repos/$REPO/releases" --jq ".[] | select(.tag_name==\"$TAG\") | .id" | head -1)
+          if [ "$(gh api "repos/$REPO/releases/$id" --jq .draft)" != "false" ]; then
+            gh api -X PATCH "repos/$REPO/releases/$id" -F draft=false -F make_latest=true >/dev/null
+          fi
+          test "$(gh api "repos/$REPO/releases/$id" --jq .draft)" = "false" || { echo "::error::The release is still a draft"; exit 1; }
+          # tidy up: drafts left behind before, and old releases (keep the newest 5)
+          for d in $(gh api "repos/$REPO/releases" --jq '.[] | select(.draft) | .id'); do gh api -X DELETE "repos/$REPO/releases/$d" || true; done
+          for t in $(gh api "repos/$REPO/releases?per_page=100" --jq '[.[] | select(.draft|not)] | sort_by(.created_at) | reverse | .[5:] | .[].tag_name'); do gh release delete "$t" --yes --cleanup-tag || true; done
