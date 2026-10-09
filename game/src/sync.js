@@ -79,6 +79,7 @@ export function collect(W, N, side, hooks) {
   }
   for (const [id, m] of Object.entries(W.mood || {})) out['md~' + id] = m;
   if (W.fights) out.fights = W.fights;
+  if (W.news) out.news = W.news;
   out.who = { p: W.player, n: NAMES[W.player] || W.player };
   return out;
 }
@@ -148,6 +149,7 @@ export function applyEntity(W, N, side, key, v, hooks) {
     case 'fr': if (v) W.friends = { ...v }; return;
     case 'md~': if (v && W.mood) W.mood[raw] = v; return;
     case 'fights': W.fights = v || []; return;
+    case 'news': if (v && W.news) W.news = { n: v.n || 0, list: v.list || [] }; return;
     case 'sky': if (v) {
       if (Math.abs((W.clock || 0) - v.c) > 0.3 && Math.abs((W.clock || 0) - v.c) < 23.7) W.clock = v.c;
       if (W.weather) W.weather.kind = v.w; W.timePick = v.tp; W.weatherPick = v.wp; if (v.sp) W.seasonPick = v.sp; W.lights = v.l || {};

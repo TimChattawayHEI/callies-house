@@ -7,6 +7,7 @@ import { NAMES, HeadIcon, OPTIONS, DEFAULT_OUTFITS } from './people.jsx';
 import { Product, GROC } from './places.jsx';
 import { TopIcon } from './clothes.jsx';
 import { personaOf, friendship } from './personality.jsx';
+import { addNews } from './news.jsx';
 
 export const FOODS = ['apples', 'bananas', 'carrots', 'grapes', 'cheese', 'eggs', 'yogurt', 'peas', 'icecream', 'fishfingers', 'pizza', 'bread', 'cake', 'cookies', 'cereal', 'porridge', 'pasta', 'beans', 'soup', 'rice', 'crisps', 'sweets', 'choc', 'honey'].filter(k => GROC[k]);
 export const foodWord = k => (GROC[k] ? GROC[k][0] : k);
@@ -50,6 +51,7 @@ export function addHappy(W, id, n, fx) {
   m.h += n; W.dirty = true;
   while (m.h >= 100) {
     m.h -= 100; m.lvl++; m.present = true;
+    addNews(W, `${NAMES[id]} went up to level ${m.lvl}!`, [id], 'level');
     later(W, 1.2, () => { if (fx && fx.levelUp) fx.levelUp(id, m.lvl); });
   }
 }
@@ -95,6 +97,7 @@ export function stepMood(W, fx) {
 }
 export function startFight(W, a, b, fx) {
   W.fights.push({ a, b, t0: W.T });
+  addNews(W, `${NAMES[a]} and ${NAMES[b]} fell out!`, [a, b], 'fight');
   if (W.friends) W.friends[key(a, b)] = Math.max(0, (W.friends[key(a, b)] || 0) - 3);
   moodOf(W, a).need = { kind: 'fight', with: b, t0: W.T };
   moodOf(W, b).need = { kind: 'fight', with: a, t0: W.T };
@@ -111,6 +114,7 @@ export function makeUp(W, a, fx) {
   if (W.friends) W.friends[key(a, b)] = Math.max(4, W.friends[key(a, b)] || 0);
   for (const id of [a, b]) { const m = moodOf(W, id); if (m.need && m.need.kind === 'fight') m.need = null; }
   addHappy(W, a, 25, fx); addHappy(W, b, 25, fx);
+  addNews(W, `${NAMES[a]} and ${NAMES[b]} are friends again!`, [a, b], 'friends');
   earn(W, 4);
   later(W, 1, () => achieve(W, 'makeup'));
   fx && fx.madeUp && fx.madeUp(a, b);
@@ -121,16 +125,18 @@ export function makeUp(W, a, fx) {
 export function feed(W, id, food, fx) {
   const m = moodOf(W, id);
   const how = food === m.fav ? 'fav' : food === m.worst ? 'worst' : 'ok';
-  if (how === 'fav') { m.known.fav = true; later(W, 2, () => achieve(W, 'favfood')); }
-  if (how === 'worst') m.known.worst = true;
+  if (how === 'fav') { if (!m.known.fav) addNews(W, `${NAMES[id]} loves ${foodWord(food)}!`, [id], 'food'); m.known.fav = true; later(W, 2, () => achieve(W, 'favfood')); }
+  if (how === 'worst') { if (!m.known.worst) addNews(W, `${NAMES[id]} does not like ${foodWord(food)}!`, [id], 'food'); m.known.worst = true; }
   if (m.need && m.need.kind === 'hungry') { clearNeed(W, id); earn(W, 3); }
   addHappy(W, id, how === 'fav' ? 40 : how === 'ok' ? 20 : 5, fx);
   return how;
 }
 export const reactLine = (id, food, how) => (how === 'fav' ? `${cap(foodWord(food))}! My FAVOURITE!` : how === 'worst' ? `Yuck! I do not like ${foodWord(food)}!` : pick(['Yum! Thank you!', 'Mmm, tasty!', 'That was nice!']));
-export function dress(W, id, fx) { if (moodOf(W, id).need && moodOf(W, id).need.kind === 'clothes') { clearNeed(W, id); earn(W, 3); } addHappy(W, id, 25, fx); }
+export function dress(W, id, fx, word) {
+  if (word) addNews(W, `${NAMES[id]} has a new ${word}!`, [id], 'clothes'); if (moodOf(W, id).need && moodOf(W, id).need.kind === 'clothes') { clearNeed(W, id); earn(W, 3); } addHappy(W, id, 25, fx); }
 export function befriend(W, id, other, fx) {
   if (W.friends) W.friends[key(id, other)] = Math.min(10, (W.friends[key(id, other)] || 0) + 3);
+  addNews(W, `${NAMES[id]} and ${NAMES[other]} are new friends!`, [id, other], 'friends');
   if (moodOf(W, id).need && moodOf(W, id).need.kind === 'friend') { clearNeed(W, id); earn(W, 3); }
   addHappy(W, id, 25, fx); if (W.mood[other] || NAMES[other]) addHappy(W, other, 10, fx);
 }

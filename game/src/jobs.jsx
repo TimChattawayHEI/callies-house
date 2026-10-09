@@ -40,6 +40,8 @@ export const STICKERS = [
   { id: 'levelup', icon: 'star', title: 'Level up!', joke: 'So happy they went up a level. Party hats on!', how: 'Help someone until their heart meter is full.' },
   { id: 'favfood', icon: 'star', title: 'Favourite food', joke: 'You found their favourite food. Yum yum yum!', how: 'Feed someone their secret favourite food.' },
   { id: 'makeup', icon: 'letter', title: 'Friends again', joke: 'Sorry said, hugs given. Best friends again!', how: 'Help two friends who fell out make up.' },
+  { id: 'concert', icon: 'music', title: 'Superstar', joke: 'The crowd went wild! Encore! Encore!', how: 'Put on a concert. Tap someone, then Sing.' },
+  { id: 'news', icon: 'star', title: 'Newsreader', joke: 'And that was the news. Back to you!', how: 'Watch Town News. Tap the News button when it shows.' },
   { id: 'maker', icon: 'star', title: 'New friend', joke: 'Everyone say hello! The street just got bigger.', how: 'Tap Families and make a new person.' },
   { id: 'decor', icon: 'sofa', title: 'Home maker', joke: 'A new thing for the house. It looks great!', how: 'In a New Street house, tap Decorate and buy something.' },
   { id: 'makeover', icon: 'roller', title: 'Room makeover', joke: 'New walls! The whole family came to have a look.', how: 'Tap Decorate and change the walls or the floor.' },

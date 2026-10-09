@@ -253,6 +253,8 @@ export const SFX = {
   bell: () => [0, 0.25, 0.5].forEach((d, i) => tone(988 - i * 120, 980 - i * 120, 0.35, 'triangle', 0.08, d)),
   thunder: () => { noise(2.6, 0.7, 70, 0, 0.5); noise(1.4, 0.5, 160, 0.08, 0.6); tone(55, 32, 1.8, 'sine', 0.22); noise(0.5, 0.35, 400, 0.02, 0.8); },
   rain: (vol = 0.04) => noise(2.2, vol, 5200, 0, 0.25),
+  note: (f, d = 0.32, type = 'triangle', vol = 0.07) => tone(f, f, d, type, vol),
+  drum: (d = 0) => { tone(110, 45, 0.16, 'sine', 0.22, d); noise(0.04, 0.08, 6000, d + 0.21, 3); },
   giggle: () => [0, 0.12, 0.24, 0.36].forEach((d, i) => tone(900 + i * 60, 1300 + i * 60, 0.08, 'sine', 0.06, d)),
 };
 
@@ -292,6 +294,13 @@ export function speak(text, who = 'narrator', onWord) {
     ss.speak(u);
     return true;
   } catch (e) { return false; }
+}
+
+// Singing: one word at a time at a note's pitch (higher or lower than the singer's own voice).
+export function sing(word, who, ratio = 1, rate = 0.85) {
+  const base = VOICES[who] || VOICES.narrator;
+  VOICES._sing = { pitch: Math.max(0.5, Math.min(2, base.pitch * ratio)), rate };
+  return speak(word, '_sing');
 }
 
 // Stickers: remember something Callie has done (once). The game shows the sticker via W.onAchieve.
