@@ -654,6 +654,7 @@ function App() {
   }
   function pickPlace(id) { setPanel(pn => (pn && pn.kind === 'map' ? { ...pn, picked: id } : pn)); speak(PLACES[id].word, 'word'); SFX.pop(); }
   function goPlace(id) {
+    if (W.fresh && (id === 'home' || id === 'nanny')) { const d = folkDef(W, W.player); id = d && PLACES['h:' + d.fam] ? 'h:' + d.fam : null; if (!id) return; }
     const here = W.out ? W.out.place : 'home';
     if (id === here || W.drive) return;
     if (id === 'school' && W.asks.school.state === 'active' && KIDS.includes(W.player) && !W.uniform[W.player]) {

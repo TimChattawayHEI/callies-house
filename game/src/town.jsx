@@ -253,6 +253,7 @@ export function TownMap({ here, T, drive, onPick, onGo, onClose, picked, fams = 
     }
     const el = e.target.closest && e.target.closest('[data-loc]');
     let id = el ? el.getAttribute('data-loc') : null;
+    if (W && W.fresh && (id === 'home' || id === 'nanny')) id = null; // not in a new world
     if (!id) { const [wx, wy] = inv(r.x, r.y, 0); let best = 3.2; for (const k of ORDER) { if (!PLACES[k] || (W && W.fresh && (k === 'home' || k === 'nanny'))) continue; const p = PLACES[k].pin, d = dist([wx, wy], [p[0], p[1] + 0.6]); if (d < best) { best = d; id = k; } } }
     if (id) onPick(id);
   };
@@ -270,7 +271,7 @@ export function TownMap({ here, T, drive, onPick, onGo, onClose, picked, fams = 
     <div className={'map-scroll' + (tall ? ' tall' : '')} ref={scroller}>
     <svg viewBox={`${cx - w / 2} ${cy - h / 2} ${w} ${h}`} preserveAspectRatio="xMidYMid meet" onClick={tap}>
       <rect x={cx - w} y={cy - h} width={w * 2} height={h * 2} fill="#efe2d0" />
-      {kids}
+      {W && W.fresh ? kids.filter(el => !(el.props && (el.props['data-loc'] === 'home' || el.props['data-loc'] === 'nanny'))) : kids}
       <MapClothes />
       <MapPets />
       {W ? <MapPlots W={W} fams={fams} building={building} sel={build && build.plot} shops={(W.town && W.town.shops) || {}} /> : null}
