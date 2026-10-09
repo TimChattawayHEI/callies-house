@@ -8,6 +8,7 @@ import { Product, GROC } from './places.jsx';
 import { TopIcon } from './clothes.jsx';
 import { personaOf, friendship } from './personality.jsx';
 import { addNews } from './news.jsx';
+import { LovePart } from './love.jsx';
 
 export const FOODS = ['apples', 'bananas', 'carrots', 'grapes', 'cheese', 'eggs', 'yogurt', 'peas', 'icecream', 'fishfingers', 'pizza', 'bread', 'cake', 'cookies', 'cereal', 'porridge', 'pasta', 'beans', 'soup', 'rice', 'crisps', 'sweets', 'choc', 'honey'].filter(k => GROC[k]);
 export const foodWord = k => (GROC[k] ? GROC[k][0] : k);
@@ -23,6 +24,9 @@ export const NEED_LINE = {
   play: () => 'Play a game with me!',
   fight: n => `I fell out with ${NAMES[n.with] || 'my friend'}.`,
   levelup: () => 'I am so happy! I went up a level!',
+  crush: n => `I really like ${NAMES[n.with] || 'someone'}!`,
+  propose: n => `I want to marry ${NAMES[n.with] || 'my sweetheart'}!`,
+  baby: () => 'We are having a baby!',
 };
 
 /* ---------------- state ---------------- */
@@ -149,7 +153,7 @@ export function moodTodos(W, where) {
   for (const id of Object.keys(W.mood || {})) {
     const k = bubbleOf(W, id); if (!k || !W.people[id] || !W.people[id].room || busyNet(W, id)) continue;
     const w = where(id);
-    out.push({ id: 'need-' + id, icon: k === 'play' ? 'ball' : k === 'fight' ? 'letter' : 'star', text: k === 'levelup' ? `${NAMES[id]} went up a level!` : `${NAMES[id]}: ${NEED_LINE[k](moodOf(W, id).need)}`, tip: `${NAMES[id]} is ${w ? 'at ' + w : 'about'}. Tap the bubble over their head.` });
+    out.push({ id: 'need-' + id, icon: k === 'play' ? 'ball' : k === 'fight' ? 'letter' : k === 'crush' || k === 'propose' || k === 'baby' ? 'heart' : 'star', text: k === 'levelup' ? `${NAMES[id]} went up a level!` : `${NAMES[id]}: ${NEED_LINE[k](moodOf(W, id).need)}`, tip: `${NAMES[id]} is ${w ? 'at ' + w : 'about'}. Tap the bubble over their head.` });
   }
   return out.slice(0, 4);
 }
@@ -163,7 +167,9 @@ export function NeedBubble({ kind, x, y, T, outfit }) {
   const icon = kind === 'hungry' ? <g transform="translate(-18 -19)"><Product id="apples" size={36} /></g>
     : kind === 'clothes' ? <g transform="translate(-16 -16)"><TopIcon top={(outfit && outfit.top) || 'tee'} color="#e86a92" size={32} /></g>
     : kind === 'friend' ? <Heart /> : kind === 'play' ? <g transform="translate(-17 -18)"><Product id="ball" size={34} /></g>
-    : kind === 'fight' ? <Storm /> : <Star />;
+    : kind === 'fight' ? <Storm /> : kind === 'crush' ? <g><Heart /><path d="M10,-14 l2,4 4,1 -4,2 -2,4 -2,-4 -4,-2 4,-1z" fill="#ffd45e" /></g>
+    : kind === 'propose' ? <g><circle cx={0} cy={4} r={9} fill="none" stroke="#f2b84b" strokeWidth={4} /><path d="M-5,-8 l5,-7 5,7 -5,4z" fill="#bfe0f7" stroke="#7cc9e8" /></g>
+    : kind === 'baby' ? <g><circle cx={0} cy={2} r={11} fill="#f6d2b8" /><circle cx={-4} cy={0} r={1.6} fill="#3b2a24" /><circle cx={4} cy={0} r={1.6} fill="#3b2a24" /><path d="M-3,6 q3,3 6,0" stroke="#3b2a24" strokeWidth={1.5} fill="none" /><path d="M-6,-9 q6,-6 12,0" fill="#e86a92" /></g> : <Star />;
   return <g transform={`translate(${x} ${y - 6 + bob}) scale(1.3)`} style={{ cursor: 'pointer' }}>
     <circle cx={-40} cy={26} r={5} fill="#fff" stroke="#3b2a24" strokeWidth={2.5} />
     <circle cx={-28} cy={18} r={8} fill="#fff" stroke="#3b2a24" strokeWidth={2.5} />
@@ -186,6 +192,7 @@ export function CarePanel({ W, id, outfits, people, onClose, onDo }) {
     {kind === 'play' && <WordGame onDone={() => onDo('played')} />}
     {kind === 'fight' && <MakeUp W={W} id={id} other={m.need.with} outfits={outfits} onDone={() => onDo('makeup')} />}
     {kind === 'levelup' && <PresentPick name={name} lvl={m.lvl} onPick={k => onDo('present', k)} />}
+    {(kind === 'crush' || kind === 'propose' || kind === 'baby') && <LovePart W={W} id={id} kind={kind} outfits={outfits} onDo={onDo} />}
     {!kind && <FoodPick W={W} id={id} snack onPick={f => onDo('eat', f)} />}
   </div>;
 }

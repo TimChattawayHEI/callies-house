@@ -42,6 +42,9 @@ export const STICKERS = [
   { id: 'makeup', icon: 'letter', title: 'Friends again', joke: 'Sorry said, hugs given. Best friends again!', how: 'Help two friends who fell out make up.' },
   { id: 'concert', icon: 'music', title: 'Superstar', joke: 'The crowd went wild! Encore! Encore!', how: 'Put on a concert. Tap someone, then Sing.' },
   { id: 'news', icon: 'star', title: 'Newsreader', joke: 'And that was the news. Back to you!', how: 'Watch Town News. Tap the News button when it shows.' },
+  { id: 'sweethearts', icon: 'heart', title: 'Sweethearts', joke: 'Two people, one big crush. Aww!', how: 'Help someone tell their crush how they feel.' },
+  { id: 'wedding', icon: 'heart', title: 'Wedding bells', joke: 'I do! I do! Pass the cake!', how: 'Have a wedding for two sweethearts.' },
+  { id: 'baby', icon: 'heart', title: 'New baby', joke: 'Welcome to the world, little one!', how: 'Help a married couple welcome a baby.' },
   { id: 'maker', icon: 'star', title: 'New friend', joke: 'Everyone say hello! The street just got bigger.', how: 'Tap Families and make a new person.' },
   { id: 'decor', icon: 'sofa', title: 'Home maker', joke: 'A new thing for the house. It looks great!', how: 'In a New Street house, tap Decorate and buy something.' },
   { id: 'makeover', icon: 'roller', title: 'Room makeover', joke: 'New walls! The whole family came to have a look.', how: 'Tap Decorate and change the walls or the floor.' },
@@ -90,6 +93,7 @@ export const STICKER = Object.fromEntries(STICKERS.map(s => [s.id, s]));
 
 export function JobIcon({ kind, size = 34, grey }) {
   const simple = { star: 'M0,-11 L3.5,-3.5 11.5,-3 5.5,2.5 7,10.5 0,6 -7,10.5 -5.5,2.5 -11.5,-3 -3.5,-3.5Z' };
+  if (kind === 'heart') return <svg viewBox="-14 -14 28 28" width={size} height={size} aria-hidden="true" style={grey ? { filter: 'grayscale(1)', opacity: 0.35 } : null}><path d="M0,10 C-14,0 -10,-12 0,-4 C10,-12 14,0 0,10Z" fill="#e86a92" /></svg>;
   if (kind === 'star' || kind === 'music' || kind === 'camera' || kind === 'spider' || kind === 'pumpkin' || kind === 'ball' || kind === 'zip' || kind === 'snowman' || kind === 'stink' || kind === 'coin' || kind === 'bulb' || kind === 'storm' || kind === 'puddle' || kind === 'rainbow' || kind === 'sofa' || kind === 'roller' || kind === 'paw' || kind === 'poo')
     return <svg viewBox="-14 -14 28 28" width={size} height={size} aria-hidden="true" style={grey ? { filter: 'grayscale(1)', opacity: 0.35 } : null}>
       {kind === 'star' && <path d={simple.star} fill="#ffd45e" stroke="#e0a92e" strokeWidth={1.5} />}
