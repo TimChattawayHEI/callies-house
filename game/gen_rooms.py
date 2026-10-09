@@ -1,7 +1,7 @@
 import pathlib, re
 R = pathlib.Path('rooms')
 order = ['iso-kit','house-builder-items','hallway-scene','parents-room-scene','chloe-room-scene','bathroom-scene','attic-scene','downstairs-hall-scene','kitchen-scene','toilet-scene','living-room-scene','middle-room-scene','back-room-scene','middle-back-room-scene','garden-scene',
-         'npc-kit','town-map-scene','park-scene','cafe-scene','supermarket-scene','school-scene','nanny-house-scene','nanny-garden-scene','clothes-shop-scene','pet-shop-scene']
+         'npc-kit','town-map-scene','park-scene','cafe-scene','supermarket-scene','school-scene','nanny-house-scene','nanny-garden-scene','clothes-shop-scene','pet-shop-scene','town-builder-shops']
 
 def must(s, a, b, name, count=1):
     n = s.count(a)
@@ -68,6 +68,9 @@ function ClothesScene({ showLabels = false }) {
 }
 window.ClothesScene = ClothesScene;
 """
+    if name == 'town-builder-shops':
+        # the game uses the shop data and the shopfront drawing
+        s = must(s, "window.TB = { CATS, SHOPS, BY };", "window.TB = { CATS, SHOPS, BY, ShopBuilding, Goods, TBShopArt, heightOf, W, D, ROOFS };", name)
     if name == 'pet-shop-scene':
         # pets she has adopted have gone home, so they leave the shop
         own = "!(window.__petsOwned || []).includes"
@@ -129,6 +132,7 @@ export const NPC = window.NPC;
 export const Iso = window.Iso;
 export const HB = window.HBItems;
 export const PetKit = window.PetKit;
+export const TB = window.TB;
 """
 pathlib.Path('rooms.gen.jsx').write_text(src)
 print('ok')

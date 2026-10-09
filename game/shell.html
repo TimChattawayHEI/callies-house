@@ -121,6 +121,10 @@ button:focus-visible { outline: 3px solid var(--pink); outline-offset: 3px; }
 .townmap { position: fixed; inset: 0; z-index: 8; background: #efe2d0; display: flex; flex-direction: column; animation: mapin .3s ease both; }
 @keyframes mapin { from { opacity: 0; } to { opacity: 1; } }
 .townmap svg { flex: 1; min-height: 0; width: 100%; display: block; cursor: pointer; }
+.map-scroll { flex: 1; min-height: 0; display: flex; overflow: auto; -webkit-overflow-scrolling: touch; }
+.map-scroll svg { flex: none; width: 100%; height: 100%; }
+.map-scroll.tall svg { width: 250%; }
+@media (max-width: 560px) { .map-bar { white-space: normal; flex-wrap: wrap; justify-content: center; max-width: calc(100% - 20px); padding: 8px 10px; } .map-bar .map-word.small { font-size: 18px; text-align: center; } }
 .map-bar { position: absolute; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); display: flex; align-items: center; gap: 12px; background: var(--cream); border: 3px solid var(--line); border-radius: 26px; box-shadow: 0 6px 0 var(--line); padding: 8px 12px 8px 18px; white-space: nowrap; }
 .map-word { font: 700 34px var(--read); color: var(--ink); background: none; border: 0; padding: 0 4px; cursor: pointer; }
 .map-word.small { font-size: 24px; }
@@ -245,6 +249,33 @@ button:focus-visible { outline: 3px solid var(--pink); outline-offset: 3px; }
 .jobs-btn.glow { animation: glow2 .6s ease-in-out infinite alternate; }
 @keyframes glow2 { to { box-shadow: 0 3px 0 #c9a16a, 0 0 0 6px rgba(255, 212, 94, .7); } }
 .sheet.jobs { width: min(620px, calc(100% - 24px)); }
+/* town builder */
+.townmap .sheet { z-index: 10; }
+.pill.build-pill { background: #2f8a76; color: #fff; border-color: #22695b; }
+.pill.dark { background: #3b2a24; color: #fff6ea; }
+.sheet.tb-pick { width: min(860px, calc(100% - 24px)); max-height: min(90vh, 640px); }
+.sheet.tb-pick .box-head, .sheet.tb-name .box-head, .sheet.tb-buy .box-head { gap: 8px; }
+.tb-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; overflow-y: auto; min-height: 0; flex: 1; padding: 2px; align-content: start; }
+.tb-card { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 6px; border-radius: 16px; background: #fff; border: 2px solid #efe2d0; cursor: pointer; color: var(--ink, #3b2a24); min-width: 0; }
+.tb-card[aria-pressed="true"] { border-color: #2f8a76; box-shadow: 0 0 0 3px #cdeae2; }
+.tb-card b { font: 800 16px var(--read); line-height: 1.1; text-align: center; } .tb-card small { font: 700 12px var(--read); opacity: .7; line-height: 1.15; text-align: center; }
+.shop-art { width: 100%; background: #e6efe0; border-radius: 12px; display: flex; }
+.shop-art svg { width: 100%; height: 100%; }
+.tb-foot { display: flex; align-items: center; gap: 10px; justify-content: space-between; flex: none; }
+.tb-says { font: 700 16px var(--read); background: none; border: 0; text-align: left; color: var(--ink, #3b2a24); min-width: 0; }
+.tb-foot .done { display: inline-flex; align-items: center; gap: 8px; }
+.sheet.tb-name { width: min(900px, calc(100% - 24px)); max-height: min(94vh, 680px); }
+.tb-name-body { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 12px; min-height: 0; overflow-y: auto; }
+.tb-preview { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.tb-preview .name-big { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tb-name-opts { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.tb-ideas { display: flex; flex-wrap: wrap; gap: 6px; } .tb-ideas .pill { font-size: 15px; padding: 4px 12px; }
+.tb-signs .sw { width: 34px; height: 34px; }
+.sheet.tb-buy { width: min(620px, calc(100% - 24px)); }
+.tb-q { margin: 0; font: 800 26px var(--read); text-align: center; }
+.tb-things { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
+.tb-things .food-tile { flex-wrap: wrap; } .tb-things .pet-price { margin-left: auto; }
+@media (max-width: 640px) { .tb-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .tb-name-body { grid-template-columns: 1fr; } .tb-preview .shop-art { height: 110px !important; } .tb-says { font-size: 14px; } }
 /* pet shop */
 .sheet.petshop { width: min(900px, calc(100% - 24px)); max-height: min(92vh, 640px); }
 .sheet.petshop .box-head { gap: 8px; }

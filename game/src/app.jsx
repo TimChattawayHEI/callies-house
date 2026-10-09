@@ -26,6 +26,7 @@ import { initAsks, stepAsks, ducksFed, schoolReady, schoolDone, dressed, KIDS } 
 import { initErrands, stepErrands, errandTap, errandGive } from './errands.js';
 import { initPersonality, stepSocial, AboutPanel } from './personality.jsx';
 import { initPets, savePets, stepPets, petDyn, adopt, feed, cleanHome, cleanMess, playWith, defOf, kindOf, petsIn, homeCenter, homeFront, HOMES as PET_HOMES, PetShopPanel, PetFoodPanel, PetMenu, PM_ICONS } from './pets.jsx';
+import { initTown, openShop as buildShop, renameShop, moveThing, thingName, ShopPickPanel, ShopNamePanel, ShopBuyPanel, keeperLines, SHOP_TYPES } from './townbuild.jsx';
 import { initEncounters, stepCritters, tapCritter, CritterArt, stepPost, readLetter, LetterArt, LetterPanel, stepVisit } from './encounters.jsx';
 import { initXmas, resetXmas, stepXmas, decorateXmas, isChristmas, TreePanel, TREE_AT } from './christmas.jsx';
 import { initHalloween, resetHalloween, stepHalloween, decorate, isHalloween, seasonOf, SEASON_LABEL, SEASON_CYCLE, PumpkinPanel } from './halloween.jsx';
@@ -162,6 +163,7 @@ function App() {
   if (!W.critters) initEncounters(W, saved);
   if (!W.friends) initPersonality(W, saved);
   if (!W.pets) initPets(W, saved);
+  if (!W.town) initTown(W, saved);
   if (!W.folk) initFolk(W, saved);
   if (W.clock == null) initSky(W, saved);
   if (W.coins == null) W.coins = saved && saved.coins != null ? saved.coins : 60;
@@ -216,7 +218,7 @@ function App() {
   W.panelOpen = !!panel;
   // saving
   const saveNow = () => {
-    store(SAVE_KEY, { items: W.items.map(({ id, kind, c: col, stripe, fillings: f, room, loc, rot, home, quest, layers, forWho, errand }) => ({ id, kind, c: col, stripe, fillings: f, room, loc, rot, home, quest, layers, forWho, errand })), hw: { stage: W.hw.stage, year: W.hw.year, pumpkin: W.hw.pumpkin }, xm: { stage: W.xm.stage, year: W.xm.year, tree: W.xm.tree }, asks: { ducks: { state: W.asks.ducks.state, who: W.asks.ducks.who }, school: { state: W.asks.school.state } }, uniform: W.uniform, spiderN: W.spiderN, seasonPick: W.seasonPick, folk: W.folk, sky: skySave(W), coins: W.coins, wardrobe: W.wardrobe, ach: W.ach, visited: W.visited, outfits: st.current.outfits, hunt: W.hunt, quests: W.quests, errand: W.errand, errN: W.errN, traits: W.traits, friends: W.friends, pets: savePets(W), met: W.met, lettersRead: W.lettersRead, letter: W.letter, goalUp: W.goal.up, lights: W.flags.lights, blind: W.flags.blind, muted: st.current.muted, voice: st.current.voice });
+    store(SAVE_KEY, { items: W.items.map(({ id, kind, c: col, stripe, fillings: f, room, loc, rot, home, quest, layers, forWho, errand, label, bought }) => ({ id, kind, c: col, stripe, fillings: f, room, loc, rot, home, quest, layers, forWho, errand, label, bought })), hw: { stage: W.hw.stage, year: W.hw.year, pumpkin: W.hw.pumpkin }, xm: { stage: W.xm.stage, year: W.xm.year, tree: W.xm.tree }, asks: { ducks: { state: W.asks.ducks.state, who: W.asks.ducks.who }, school: { state: W.asks.school.state } }, uniform: W.uniform, spiderN: W.spiderN, seasonPick: W.seasonPick, folk: W.folk, sky: skySave(W), coins: W.coins, wardrobe: W.wardrobe, ach: W.ach, visited: W.visited, outfits: st.current.outfits, hunt: W.hunt, quests: W.quests, errand: W.errand, errN: W.errN, traits: W.traits, friends: W.friends, pets: savePets(W), town: W.town, met: W.met, lettersRead: W.lettersRead, letter: W.letter, goalUp: W.goal.up, lights: W.flags.lights, blind: W.flags.blind, muted: st.current.muted, voice: st.current.voice });
     W.dirty = false;
   };
   useEffect(() => { W.dirty = true; }, [outfits, muted, voice]);
@@ -322,12 +324,12 @@ function App() {
     if (inPack().length >= PACK_MAX) { say(W, me, 'My bag is full!'); return false; }
     it.loc = { s: 'pack' }; it.packT = W.T; it.room = null; W.dirty = true;
     SFX.pop(); if (fromAt) burst(W, 'spark', fromAt, { n: 8, spread: 60 });
-    wordFx(KINDS[it.kind] ? KINDS[it.kind].word : it.kind, headAt(c));
+    wordFx(it.label || (KINDS[it.kind] ? KINDS[it.kind].word : it.kind), headAt(c));
     if (it.kind === 'spooky') { if (me === 'mum') later(W, 0.6, () => decorate(W, t => showToast(t))); else later(W, 0.6, () => { SFX.sparkle(); showToast('Found the spooky box!'); say(W, me, 'The spooky box! Take it to Mum!'); }); }
     else if (it.kind === 'xmasbox') { if (me === 'mum') later(W, 0.6, () => decorateXmas(W, t => showToast(t))); else later(W, 0.6, () => { SFX.sparkle(); showToast('Found the Christmas box!'); say(W, me, 'The Christmas box! Take it to Mum!'); }); }
     else if (it.kind === 'bread' && W.asks.ducks.state === 'active') later(W, 0.6, () => { SFX.sparkle(); say(W, me, 'Bread for the ducks! Now to the park!'); });
     else if (it.quest) later(W, 0.6, () => { SFX.sparkle(); showToast(`Found ${NAMES[it.quest]}'s ${it.kind}!`); say(W, me, `${NAMES[it.quest]}'s ${it.kind}!`); });
-    if (huntTarget(W) === it.kind) {
+    if (huntTarget(W) === it.kind && !it.bought) {
       W.hunt.done.push(it.kind); W.hunt.idx++;
       later(W, 0.8, () => { SFX.fanfare(); say(W, me, `I found the ${it.kind}!`); c.action = { kind: 'cheer', t0: W.T, dur: 1.4 }; burst(W, 'confetti', headAt(c)); showToast(`You found the ${it.kind}!`); earn(W, 5); if (!huntTarget(W)) later(W, 2.5, () => achieve(W, 'hunt')); });
     }
@@ -335,6 +337,70 @@ function App() {
   }
   function putIn(it, boxId) { it.loc = { s: 'in', box: boxId, order: W.T }; it.room = CONTAINERS[boxId].room; W.dirty = true; SFX.pop(); }
   function dropOnFloor(it, x, y) { const [fx, fy] = nav(W.room).nearestFree(x, y, 0.05); it.loc = { s: 'floor', x: fx, y: fy }; it.room = W.room; it.rot = rand(-20, 20); W.dirty = true; SFX.plop(); }
+  /* ----- the town builder ----- */
+  const tbOf = () => (panel && panel.kind === 'map' && panel.tb) || null;
+  const setTb = tb => setPanel(pn => (pn && pn.kind === 'map' ? { ...pn, tb } : pn));
+  function tbPlot(k) {
+    const tb = tbOf(); if (!tb) return;
+    if (tb.moving) {
+      const ok = moveThing(W, tb.moving.loc, k);
+      if (!ok) { speak(tb.moving.loc.startsWith('s:') ? 'Shops go on the high streets.' : 'Someone lives there!', 'narrator'); SFX.click(); return; }
+      SFX.sparkle(); speak(`${tb.moving.name} is here now!`, 'narrator');
+      if (tb.then) { const then = tb.then; setTb(null); setPanel(pn => ({ ...pn, picked: then, tb: null })); later(W, 0.5, () => goPlace(then)); return; }
+      setTb({}); return;
+    }
+    if (typeof k === 'number') { speak('New Street is for houses. Make a new person to build a house!', 'narrator'); SFX.click(); return; }
+    setTb({ plot: k, step: 'pick' }); speak('What kind of shop?', 'narrator'); SFX.pop();
+  }
+  function tbThing(loc) {
+    const name = thingName(W, loc); if (!name) return;
+    speak(name, 'word'); SFX.pop(); setTb({ thing: loc });
+  }
+  function tbOpen(type, name, sign) {
+    const tb = tbOf(); if (!tb) return;
+    if (tb.rename) { renameShop(W, tb.rename, name, sign); SFX.sparkle(); setTb({}); speak(`${name}!`, 'word'); return; }
+    const sh = buildShop(W, type, name, sign, tb.plot); if (!sh) return;
+    SFX.coins(); later(W, 0.3, () => SFX.fanfare());
+    speak(`${sh.name} is open!`, 'narrator'); setTb({ opened: sh.id });
+    later(W, 2, () => achieve(W, 'myshop')); if (Object.keys(W.town.shops).length >= 5) later(W, 3, () => achieve(W, 'highstreet'));
+  }
+  function tbBar() {
+    const tb = tbOf(); if (!tb) return null;
+    const done = <button className="done" onClick={() => { setTb(null); SFX.zip(); }}>Done</button>;
+    if (tb.moving) return <><b className="map-word small">Where shall {tb.moving.name} go?</b>{tb.then ? <button className="done" onClick={() => { const then = tb.then; setPanel(pn => ({ ...pn, picked: then, tb: null })); later(W, 0.4, () => goPlace(then)); }}>Keep it here</button> : <button className="pill" onClick={() => setTb({})}>Cancel</button>}</>;
+    if (tb.opened && W.town.shops[tb.opened]) { const sh = W.town.shops[tb.opened]; return <><b className="map-word small">{sh.name} is open!</b><button className="pill" onClick={() => setTb({})}>Build more</button><button className="done" onClick={() => { setPanel(pn => ({ ...pn, picked: 's:' + sh.id, tb: null })); later(W, 0.3, () => goPlace('s:' + sh.id)); }}>Go inside</button></>; }
+    if (tb.thing) { const loc = tb.thing, name = thingName(W, loc), shop = loc.startsWith('s:') && W.town.shops[loc.slice(2)];
+      return <><b className="map-word small">{name}</b><button className="pill" onClick={() => { setTb({ moving: { loc, name } }); speak('Tap where it should go', 'narrator'); }}>Move</button>{shop && <button className="pill" onClick={() => setTb({ rename: shop.id, type: shop.type, step: 'name' })}>Rename</button>}{done}</>; }
+    return <><b className="map-word small">Tap a + to build a shop</b>{done}</>;
+  }
+  function tbSheets() {
+    const tb = tbOf(); if (!tb) return null;
+    if (tb.step === 'pick') return <ShopPickPanel W={W} plot={tb.plot} start={tb.type} onClose={() => setTb({})} onNext={type => { setTb({ ...tb, type, step: 'name' }); speak('Give it a name!', 'narrator'); }} />;
+    if (tb.step === 'name') return <ShopNamePanel key={tb.rename || tb.type} W={W} type={tb.type} rename={tb.rename && W.town.shops[tb.rename]} onBack={() => setTb(tb.rename ? {} : { ...tb, step: 'pick' })} onOpen={(n, sg) => tbOpen(tb.type, n, sg)} />;
+    return null;
+  }
+  function openTownShop(sh) {
+    const t = SHOP_TYPES[sh.type];
+    if (t.id === 'pets') { setPanel({ kind: 'petshop', cat: 'dogs' }); return; }
+    if (t.id === 'clothes' || t.id === 'shoes') { openShop(t.id === 'shoes' ? 'shoes' : 'tops'); return; }
+    if (t.id === 'icecream') { setPanel({ kind: 'icecream' }); return; }
+    setPanel({ kind: 'townshop', id: sh.id }); speak('What would you like?', 'narrator');
+  }
+  function buyThing(sh, t) {
+    if (W.coins < t.price) { say(W, me, 'I need more coins!'); return; }
+    W.coins -= t.price; W.dirty = true; SFX.coins();
+    const at = P(2.6, 4.75, 1.3);
+    if (t.service) {
+      setPanel(null);
+      later(W, 0.5, () => { c.action = { kind: 'twirl', t0: W.T, dur: 0.8 }; burst(W, 'spark', headAt(c), { n: 16, spread: 120 }); SFX.sparkle(); say(W, me, pick(['Ta-da! Do you like it?', 'All done! So pretty!', 'Look at me!'])); });
+      npcSay('Keeper', pick(['There you go!', 'Lovely!', 'All done!']), [2.6, 3.75, 2.4], 'lady');
+      return;
+    }
+    const it = { id: 'b' + Math.round(W.T * 1000), kind: t.kind || 'shopping', label: t.kind ? undefined : t.word, c: sh.sign, bought: true, room: W.room, loc: { s: 'floor', x: c.x, y: c.y }, rot: 0 };
+    W.items.push(it); if (!toPack(it, at)) { W.items = W.items.filter(x => x !== it); W.coins += t.price; return; }
+    npcSay('Keeper', pick(['Here you go!', 'Thank you!', 'Enjoy it!']), [2.6, 3.75, 2.4], 'lady');
+    if (!t.kind) later(W, 0.6, () => speak(t.word, 'word'));
+  }
   /* ----- pets ----- */
   const grownUp = () => ['mum', 'dad'].find(k => k !== W.player && W.people[k] && W.people[k].room) || null;
   const petFx = {
@@ -531,6 +597,13 @@ function App() {
   }
   function greet(id, from, plan = {}) {
     const me = W.player, c = player(W), off = who => (W.people[who] && W.people[who].room === W.room ? null : { type: 'off', id: who });
+    if (id.startsWith('s:')) {
+      const sh = W.town.shops[id.slice(2)]; if (!sh) return;
+      const L = keeperLines(sh);
+      npcSay('Keeper', L[0], [2.6, 3.75, 2.4], 'lady'); later(W, 2.6, () => npcSay('Keeper', L[1], [2.6, 3.75, 2.4], 'lady'));
+      later(W, 5.5, () => achieve(W, 'visitshop'));
+      return;
+    }
     if (id.startsWith('h:')) {
       const fam = W.folk.fams[id.slice(2)];
       if (fam && fam.members.includes(me)) say(W, me, pick(['Home sweet home!', 'I am home!']));
@@ -650,7 +723,7 @@ function App() {
       clothes: kid ? ['Hi!', 'I like your top!', 'Look at my new shoes!'] : ['Hello! Lovely to see you!', 'Try it on in the fitting room!', 'That looks great on you!', 'Can I help you?'],
       pets: kid ? ['I love the puppies!', 'Look at the fish!', 'I want a kitten!'] : ['Hello! Would you like a pet?', 'All our pets need a good home.', 'Tap a pet to meet them!'],
       school: kid ? ['Hi Callie!', 'Play with me!', 'I like school!', 'Look at my picture!'] : ['Good morning!', 'Hello, Callie!', 'Well done!'],
-    }[W.room] || ['Hello!'];
+    }[W.room] || (ROOMS[W.room] && ROOMS[W.room].shop && W.town.shops[ROOMS[W.room].shop] ? keeperLines(W.town.shops[ROOMS[W.room].shop]) : ['Hello!']);
     const line = pick(lines);
     npcSay(key, line, [li.at[0], li.at[1], (li.at[2] || 0) + (kid ? 1.75 : 2.4)], voice);
     if (line.includes('biscuit')) later(W, 1.8, () => giveFood('biscuit', {}, P(li.at[0], li.at[1], 1.6)));
@@ -736,6 +809,14 @@ function App() {
       const s = item && item.sort, at = s ? [(s[0] + s[1]) / 2, Math.min(10.4, s[3] + 0.55)] : [c.x, c.y];
       if (base === 'FittingRooms') { walkTo(W, c, ...nav('clothes').nearestFree(2.0, 3.6), () => { wordFx('fitting room', top); setDressWho(me); setPanel({ kind: 'dress' }); }); return true; }
       if (CAT[key]) { walkTo(W, c, ...nav('clothes').nearestFree(at[0], at[1]), () => { c.facing = 'back'; c.flip = false; wordFx(TOWN_WORDS[base] || 'clothes', top); openShop(CAT[key]); }); return true; }
+    }
+    if (ROOMS[R] && ROOMS[R].shop) {
+      const sh = W.town.shops[ROOMS[R].shop];
+      if (sh && ['Counter', 'Display', 'Display2', 'Table'].includes(key)) {
+        wordFx(key === 'Counter' ? 'till' : SHOP_TYPES[sh.type].type.toLowerCase(), top);
+        walkTo(W, c, ...nav(R).nearestFree(2.7, 5.6), () => { c.facing = 'back'; c.flip = false; setPackOpen(false); openTownShop(sh); });
+        return true;
+      }
     }
     if (R === 'pets') {
       const CAT = { Pen: 'dogs', CatTree: 'cats', Hutches: 'small', Aquarium: 'fish', BirdCages: 'birds', Till: 'mine' };
@@ -830,6 +911,12 @@ function App() {
     setOutfits(o => ({ ...o, [def.id]: def.outfit }));
     SFX.fanfare(); showToast(`Welcome, ${def.name}!`); later(W, 2, () => achieve(W, 'maker'));
     const place = home === 'home' ? 'home' : 'h:' + def.fam, here = W.out ? W.out.place : 'home';
+    if (home === 'new') {
+      // she chooses where the new house goes on the map
+      setPanel({ kind: 'map', here, picked: null, tb: { moving: { loc: place, name: `${def.name}'s house` }, then: place } });
+      later(W, 0.8, () => speak(`Where shall ${def.name}'s house go? Tap a space on the map.`, 'narrator'));
+      return;
+    }
     if (place === here) { setPanel(null); later(W, 0.8, () => { const q = W.people[def.id]; if (q && q.room === W.room) { say(W, def.id, `Hello! I am ${def.name}!`); q.action = { kind: 'wave', t0: W.T, dur: 1.6 }; } else say(W, def.id, `Hello! I am ${def.name}!`, { type: 'off', id: def.id }); }); return; }
     setPanel({ kind: 'map', here, picked: place }); later(W, 0.6, () => goPlace(place));
   }
@@ -1045,7 +1132,7 @@ function App() {
     if (key === 'bat') { if (W.bat && !W.bat.flee) { W.bat.flee = W.T; SFX.squeak(); wordFx('bat', top); } return; }
     if (key === 'jack') { SFX.boing(); wordFx('pumpkin', [pt[0], pt[1] - 30]); return; }
     if (R === 'kitchen' && key === 'pumpkin') { walkTo(W, c, ...nav('kitchen').nearestFree(2.0, 1.15), () => { c.facing = 'back'; c.flip = false; wordFx('pumpkin', top); setPanel({ kind: 'pumpkin' }); }); return; }
-    if (TOWN.includes(R) && townTap(key, item, pt, top)) return;
+    if ((TOWN.includes(R) || (ROOMS[R] && ROOMS[R].shop)) && townTap(key, item, pt, top)) return;
     // anything else: walk over, it wiggles and says its name
     walkNear(key, item, () => wiggle(W, key));
     if (word) wordFx(word, top); else SFX.pop();
@@ -1523,6 +1610,7 @@ function App() {
     {panel && panel.kind === 'about' && <AboutPanel key={panel.who} W={W} who={panel.who} head={<HeadIcon who={panel.who} o={dressed(W, outfits)[panel.who] || DEFAULT_OUTFITS[panel.who]} size={30} />} onClose={() => { setPanel(panel.back ? { kind: panel.back } : null); SFX.zip(); }} />}
     {panel && panel.kind === 'petshop' && <PetShopPanel W={W} T={T} start={panel.cat} onClose={() => { setPanel(null); SFX.zip(); }} onAdopt={id => { const ok = adopt(W, id); if (ok) { const d = defOf({ id }); SFX.coins(); later(W, 0.3, () => SFX.fanfare()); showToast(`${d.name} is coming home!`); speak(`${d.name} is coming home with you!`, 'narrator'); } return ok; }} />}
     {panel && panel.kind === 'petfood' && <PetFoodPanel key={panel.ids.join()} W={W} ids={panel.ids} onClose={() => setPanel(null)} onFeed={f => petFeed(panel.ids, f)} />}
+    {panel && panel.kind === 'townshop' && W.town.shops[panel.id] && <ShopBuyPanel W={W} sh={W.town.shops[panel.id]} onBuy={t => buyThing(W.town.shops[panel.id], t)} onClose={() => { setPanel(null); SFX.zip(); }} />}
     {panel && panel.kind === 'letter' && <LetterPanel W={W} onClose={() => { readLetter(W); setPanel(null); SFX.zip(); }} />}
     {panel && panel.kind === 'jobs' && <JobsPanel W={W} start={panel.tab} onClose={() => { setPanel(null); SFX.zip(); }} />}
     {petMenu && (() => {
@@ -1553,7 +1641,7 @@ function App() {
     {panel && panel.kind === 'icecream' && <IceCreamPanel outfits={outfits} onClose={() => setPanel(null)} onMake={(scoops, sprinkles, forWho) => { SFX.coins(); giveFood('icecream', { scoops, sprinkles, forWho }, P(2.3, 10.4, 1.6)); npcSay('ices', 'Here you go!', [2.3, 10.5, 2.9], 'lady'); later(W, 2, () => achieve(W, 'icecream')); }} />}
     {panel && panel.kind === 'shelf' && W.shop && <ShelfPanel section={panel.section} basket={W.shop.basket} list={W.shop.list} onTake={shopTake} onClose={() => setPanel(null)} />}
     {panel && panel.kind === 'till' && W.shop && <CheckoutPanel basket={W.shop.basket} list={W.shop.list} T={T} t0={panel.t0} onPay={shopPay} onClose={() => setPanel(null)} />}
-    {panel && panel.kind === 'map' && <TownMap fams={Object.values(W.folk.fams).map(f => ({ ...f, look: houseLook(f.seed) }))} here={panel.here} picked={panel.picked} T={T} drive={W.drive} onPick={pickPlace} onGo={goPlace} onClose={() => { if (!W.drive) setPanel(null); }} />}
+    {panel && panel.kind === 'map' && <TownMap W={W} build={panel.tb || null} onPlot={tbPlot} onThing={tbThing} onBuild={W.drive ? null : () => { setTb({}); speak('Tap a plus to build a shop!', 'narrator'); }} bar={panel.tb ? tbBar() : null} fams={Object.values(W.folk.fams).map(f => ({ ...f, look: houseLook(f.seed) }))} here={panel.here} picked={panel.picked} T={T} drive={W.drive} onPick={pickPlace} onGo={goPlace} onClose={() => { if (!W.drive) setPanel(null); }}>{panel.tb ? tbSheets() : null}</TownMap>}
     {panel && panel.kind === 'tree' && <TreePanel start={W.xm.tree} T={T} onClose={() => setPanel(null)} onDone={d => {
       setPanel(null); W.xm.tree = d; W.dirty = true; SFX.fanfare(); const at = P(TREE_AT[0], TREE_AT[1], 2.2);
       burst(W, 'spark', at, { n: 18, spread: 140 }); later(W, 0.2, () => wordFx('Sparkly!', at)); c.action = { kind: 'cheer', t0: W.T, dur: 1.4 };
