@@ -92,7 +92,9 @@ button:focus-visible { outline: 3px solid var(--pink); outline-offset: 3px; }
 .who small { font: 700 12px var(--read); margin-top: -2px; }
 .who[aria-pressed="true"] { background: #ffe1ec; border-color: var(--pink); }
 .pack-btn .count { position: absolute; right: -6px; top: -6px; min-width: 24px; height: 24px; border-radius: 12px; background: var(--pink); color: #fff; font: 800 15px/24px var(--display); }
-.tray { position: absolute; left: 0; bottom: 78px; display: flex; gap: 6px; flex-wrap: wrap; background: var(--cream); border: 3px solid var(--line); border-radius: 22px; padding: 6px; box-shadow: 0 4px 0 var(--line); max-width: calc(100vw - 180px); min-width: 0; }
+.tray { position: absolute; left: 0; bottom: 78px; display: flex; gap: 6px; flex-wrap: wrap; align-content: flex-start; background: var(--cream); border: 3px solid var(--line); border-radius: 22px; padding: 6px; box-shadow: 0 4px 0 var(--line); width: max-content; max-width: min(calc(100vw - 180px), 568px); max-height: min(55vh, 330px); overflow-y: auto; min-width: 0; box-sizing: border-box; }
+.tray-head { flex: 0 0 100%; display: flex; justify-content: space-between; align-items: center; padding: 0 6px; font: 800 15px var(--display); color: var(--ink); }
+.tray-head .full { color: var(--pink); }
 .slot { width: 64px; height: 70px; border-radius: 14px; border: 2px solid var(--line); background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
 .slot[aria-pressed="true"] { border-color: var(--pink); box-shadow: 0 0 0 3px var(--pink); }
 .slot small { font: 700 13px var(--read); margin-top: -4px; }
@@ -230,7 +232,7 @@ button:focus-visible { outline: 3px solid var(--pink); outline-offset: 3px; }
   .sheet { max-height: 80vh; }
   .box-cols { grid-template-columns: 1fr; }
   .bubble .w { font-size: 22px; }
-  .tray { max-width: calc(100vw - 170px); }
+  .tray { max-width: calc(100vw - 24px); max-height: 50vh; }
 }
 @media (min-width: 1000px) {
   .sheet.dress { left: auto; right: 14px; transform: none; top: calc(70px + env(safe-area-inset-top, 0px)); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); width: 420px; max-height: none; animation-name: slide; }

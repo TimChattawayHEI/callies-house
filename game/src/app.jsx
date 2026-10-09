@@ -38,7 +38,7 @@ import { initHalloween, resetHalloween, stepHalloween, decorate, isHalloween, se
 const PAINT_KEY = 'callies-house-paintings-v1';
 const load = k => { try { const s = localStorage.getItem(k); return s ? JSON.parse(s) : null; } catch (e) { return null; } };
 const store = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* storage unavailable */ } };
-const PACK_MAX = 8;
+const PACK_MAX = 20;
 const FILLINGS = ['ham', 'jam', 'egg', 'cheese', 'tuna'];
 
 /* ---------------- poses ---------------- */
@@ -345,7 +345,7 @@ function App() {
 
   /* ----- moving things around ----- */
   function toPack(it, fromAt) {
-    if (inPack().length >= PACK_MAX) { say(W, me, 'My bag is full!'); return false; }
+    if (inPack().length >= PACK_MAX) { say(W, me, 'My bag is full!'); showToast('Your bag is full! Put something down first.'); return false; }
     it.loc = { s: 'pack' }; it.packT = W.T; it.room = null; W.dirty = true;
     SFX.pop(); if (fromAt) burst(W, 'spark', fromAt, { n: 8, spread: 60 });
     wordFx(it.label || (KINDS[it.kind] ? KINDS[it.kind].word : it.kind), headAt(c));
@@ -1639,6 +1639,7 @@ function App() {
         <span className="count">{pack.length}</span>
       </button>
       {packOpen && <div className="tray" onPointerDown={e => e.stopPropagation()}>
+        <div className="tray-head"><b>My bag</b><span className={pack.length >= PACK_MAX ? 'full' : ''}>{pack.length} / {PACK_MAX}</span></div>
         {pack.length ? pack.map(it => <button key={it.id} className="slot" aria-pressed={sel === it.id} onClick={() => { const nv = sel === it.id ? null : it.id; setSel(nv); speak(KINDS[it.kind] ? KINDS[it.kind].word : 'thing', 'word'); }}><ItemIcon it={it} size={46} /><small>{KINDS[it.kind] ? KINDS[it.kind].word : ''}</small></button>)
           : <span className="empty">My bag is empty. Tap toys to pick them up!</span>}
       </div>}
@@ -1647,7 +1648,7 @@ function App() {
     </div>
     {sel && <div className="hint-sel">Tap where to put it, or tap someone to give it to them.{(() => { const it = W.items.find(i => i.id === sel); return it && it.kind === 'book' ? <button className="pill read-it" onClick={() => readBook(storyFor(it), null)}>Read it!</button> : null; })()}</div>}
     {panel && panel.kind === 'book' && <BookReader storyId={panel.story} reader={NAMES[me]} onClose={closeBook} canBag={!!panel.itemId} onBag={() => { const it = W.items.find(i => i.id === panel.itemId); if (it) toPack(it, headAt(c)); closeBook(); }} />}
-    {hint && !panel && <div className="hint">Tap to walk. Tap things to hear their names. Tap the door signs to go to other rooms.</div>}
+    {hint && !panel && !packOpen && <div className="hint">Tap to walk. Tap things to hear their names. Tap the door signs to go to other rooms.</div>}
     {toast && <div className="toast">{toast}</div>}
     {stickerPop && STICKER[stickerPop.id] && <button key={stickerPop.t} className="sticker-pop" onPointerDown={e => e.stopPropagation()} onClick={() => openJobs('stickers')}><JobIcon kind={STICKER[stickerPop.id].icon} size={46} /><span><small>New sticker!</small><b>{STICKER[stickerPop.id].title}</b></span></button>}
     {splash && <Splash onStart={() => { window.__splashing = false; setSplash(false); AUDIO.unlocked = true; audio(); SFX.sparkle(); setWorlds('start'); later(W, 0.4, () => speak('Which world shall we play?', 'narrator')); }} />}
