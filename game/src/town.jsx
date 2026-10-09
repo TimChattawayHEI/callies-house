@@ -253,7 +253,7 @@ export function TownMap({ here, T, drive, onPick, onGo, onClose, picked, fams = 
     }
     const el = e.target.closest && e.target.closest('[data-loc]');
     let id = el ? el.getAttribute('data-loc') : null;
-    if (!id) { const [wx, wy] = inv(r.x, r.y, 0); let best = 3.2; for (const k of ORDER) { const p = PLACES[k].pin, d = dist([wx, wy], [p[0], p[1] + 0.6]); if (d < best) { best = d; id = k; } } }
+    if (!id) { const [wx, wy] = inv(r.x, r.y, 0); let best = 3.2; for (const k of ORDER) { if (!PLACES[k] || (W && W.fresh && (k === 'home' || k === 'nanny'))) continue; const p = PLACES[k].pin, d = dist([wx, wy], [p[0], p[1] + 0.6]); if (d < best) { best = d; id = k; } } }
     if (id) onPick(id);
   };
   const focus = building ? P(8.5, (13.4 + (W ? 13.4 + 3 * Math.max(1, shownRows(W, true)) : 16)) / 2, 0) : PLACES[here] ? P(...PLACES[here].pin) : null;
@@ -275,7 +275,7 @@ export function TownMap({ here, T, drive, onPick, onGo, onClose, picked, fams = 
       <MapPets />
       {W ? <MapPlots W={W} fams={fams} building={building} sel={build && build.plot} shops={(W.town && W.town.shops) || {}} /> : null}
       {car}
-      {!building && ORDER.filter(k => PLACES[k]).map(k => { const p = P(...PLACES[k].pin), on = picked === k, word = PLACES[k].word, fs = word.length > 9 ? 32 : 40, wd = word.length * fs * 0.65 + 44; return <g key={k} data-loc={k} transform={`translate(${p[0]} ${p[1]})`}>
+      {!building && ORDER.filter(k => PLACES[k] && !(W && W.fresh && (k === 'home' || k === 'nanny'))).map(k => { const p = P(...PLACES[k].pin), on = picked === k, word = PLACES[k].word, fs = word.length > 9 ? 32 : 40, wd = word.length * fs * 0.65 + 44; return <g key={k} data-loc={k} transform={`translate(${p[0]} ${p[1]})`}>
         <rect x={-wd / 2} y={-30} width={wd} height={58} rx={29} fill={on ? '#e86a92' : '#3b2a24'} stroke="#fff" strokeWidth={4} />
         <text x={0} y={fs * 0.35} textAnchor="middle" fontSize={fs} fontWeight="700" fontFamily="'Andika','Baloo 2',sans-serif" fill="#fff">{word}</text>
         {k === here && <text x={0} y={52} textAnchor="middle" fontSize={22} fontWeight="700" fontFamily="'Andika','Baloo 2',sans-serif" fill="#3b2a24">you are here</text>}

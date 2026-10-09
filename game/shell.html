@@ -249,6 +249,20 @@ button:focus-visible { outline: 3px solid var(--pink); outline-offset: 3px; }
 .jobs-btn.glow { animation: glow2 .6s ease-in-out infinite alternate; }
 @keyframes glow2 { to { box-shadow: 0 3px 0 #c9a16a, 0 0 0 6px rgba(255, 212, 94, .7); } }
 .sheet.jobs { width: min(620px, calc(100% - 24px)); }
+/* worlds */
+.worlds-back, .first-run { position: fixed; inset: 0; z-index: 20; background: radial-gradient(circle at 50% 30%, #fff6ea, #efe2d0 70%); }
+.first-run .sheet { z-index: 21; }
+.sheet.worlds { width: min(640px, calc(100% - 24px)); max-height: min(92vh, 640px); z-index: 21; bottom: 20%; }
+.world-list { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; min-height: 0; }
+.world-card { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 18px; background: #fff; border: 2px solid #efe2d0; }
+.world-card.on { border-color: #e86a92; box-shadow: 0 0 0 3px #ffd0e0; }
+.world-heads { display: flex; gap: 2px; align-items: center; min-width: 40px; }
+.world-dot { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px #e3d0ae; }
+.world-new { font-size: 26px; color: #e3b04f; }
+.world-name { background: none; border: 0; font: 800 22px var(--read); color: var(--ink, #3b2a24); text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pill.small-del { font-size: 13px; padding: 2px 10px; opacity: .7; }
+.done.new-world { align-self: center; }
+@media (max-width: 520px) { .world-card { grid-template-columns: minmax(0, 1fr) auto; } .world-heads { grid-column: 1 / -1; } .world-name { font-size: 19px; } }
 /* town builder */
 .townmap .sheet { z-index: 10; }
 .pill.build-pill { background: #2f8a76; color: #fff; border-color: #22695b; }

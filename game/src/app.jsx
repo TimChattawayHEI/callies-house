@@ -25,13 +25,14 @@ import { TownMap, PLACES, pickParty, homeNow, arriveAt, stepCompanion, compLine 
 import { initAsks, stepAsks, ducksFed, schoolReady, schoolDone, dressed, KIDS } from './asks.js';
 import { initErrands, stepErrands, errandTap, errandGive } from './errands.js';
 import { initPersonality, stepSocial, AboutPanel } from './personality.jsx';
-import { initPets, savePets, stepPets, petDyn, adopt, feed, cleanHome, cleanMess, playWith, defOf, kindOf, petsIn, homeCenter, homeFront, HOMES as PET_HOMES, PetShopPanel, PetFoodPanel, PetMenu, PM_ICONS } from './pets.jsx';
+import { initPets, petHouse, savePets, stepPets, petDyn, adopt, feed, cleanHome, cleanMess, playWith, defOf, kindOf, petsIn, homeCenter, homeFront, HOMES as PET_HOMES, PetShopPanel, PetFoodPanel, PetMenu, PM_ICONS } from './pets.jsx';
+import { SAVE_KEY, WorldPicker, skipIntro, currentWorld, nameWorld } from './worlds.jsx';
 import { initTown, openShop as buildShop, renameShop, moveThing, thingName, ShopPickPanel, ShopNamePanel, ShopBuyPanel, keeperLines, SHOP_TYPES } from './townbuild.jsx';
 import { initEncounters, stepCritters, tapCritter, CritterArt, stepPost, readLetter, LetterArt, LetterPanel, stepVisit } from './encounters.jsx';
 import { initXmas, resetXmas, stepXmas, decorateXmas, isChristmas, TreePanel, TREE_AT } from './christmas.jsx';
 import { initHalloween, resetHalloween, stepHalloween, decorate, isHalloween, seasonOf, SEASON_LABEL, SEASON_CYCLE, PumpkinPanel } from './halloween.jsx';
 
-const SAVE_KEY = 'callies-house-v1', PAINT_KEY = 'callies-house-paintings-v1';
+const PAINT_KEY = 'callies-house-paintings-v1';
 const load = k => { try { const s = localStorage.getItem(k); return s ? JSON.parse(s) : null; } catch (e) { return null; } };
 const store = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* storage unavailable */ } };
 const PACK_MAX = 8;
@@ -170,6 +171,21 @@ function App() {
   if (!W.wardrobe) W.wardrobe = (saved && saved.wardrobe) || {};
   if (!W.xm) initXmas(W, saved);
   if (!W.visited) W.visited = (saved && saved.visited) || {};
+  // a new world: no Callie family, you live in the house you made for yourself
+  if (W.fresh == null) {
+    W.fresh = !!(saved && saved.fresh); W.worldId = currentWorld();
+    if (W.fresh) {
+      for (const id of ['callie', 'chloe', 'mum', 'dad', 'connor']) Object.assign(W.people[id], { room: null, op: 0, path: null, mode: 'stand' });
+      W.owner = (saved && saved.owner && W.folk.people[saved.owner]) ? saved.owner : null;
+      W.worldName = (saved && saved.worldName) || 'New world';
+      if (W.owner) {
+        W.player = saved.player && W.folk.people[saved.player] ? saved.player : W.owner; W.prevPlayer = W.player;
+        const fam = W.folk.people[W.player].fam;
+        if (PLACES['h:' + fam]) arriveAt(W, 'h:' + fam, []);
+        petHouse(W);
+      } else W.player = 'callie';
+    }
+  }
   const [outfits, setOutfits] = useState(() => ({ ...DEFAULT_OUTFITS, ...Object.fromEntries(Object.entries((saved && saved.outfits) || {}).map(([k, v]) => [k, { ...DEFAULT_OUTFITS[k], ...v }])) }));
   const [paintings, setPaintings] = useState(() => load(PAINT_KEY) || []);
   const [panel, setPanel] = useState(null); // {kind:'dress'|'box'|'fridge'|'paint', ...}
@@ -192,7 +208,8 @@ function App() {
   const [photos, setPhotos] = useState(() => load(PHOTO_KEY) || []);
   const [pmenu, setPmenu] = useState(null);
   const [petMenu, setPetMenu] = useState(null); // {pet} or {home}
-  const [splash, setSplash] = useState(() => { const on = !window.__DEBUG || !!window.__SPLASH; window.__splashing = on; return on; }); // the opening animation
+  const [splash, setSplash] = useState(() => { const skip = skipIntro(); const on = !skip && (!window.__DEBUG || !!window.__SPLASH); window.__splashing = on; return on; }); // the opening animation
+  const [worlds, setWorlds] = useState(null); // the world picker: 'start' after the splash, 'menu' from the menu
   const [build, setBuild] = useState(null); // decorating a New Street room: { rid, fam, rk, tab, cat, sel, saved }
   const [, setFrame] = useState(0);
   const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight });
@@ -203,13 +220,14 @@ function App() {
   const c = player(W);
   const me = c.id;
   window.__back = () => { if (build) endBuild(); else if (panel) { if (panel.kind === 'book') closeBook(); else setPanel(null); } else if (petMenu) setPetMenu(null); else if (pmenu) setPmenu(null); else if (menu) setMenu(false); else if (packOpen) setPackOpen(false); else if (sel) setSel(null); };
-  if (window.__DEBUG) { window.__W = W; window.__tap = (h, pt) => onTap(h, pt || [960, 540]); window.__switch = id => switchTo(id); window.__pick = id => pickPlace(id); window.__ROOMS = ROOMS; window.__nav = nav; window.__openMap = () => openMap(); window.__buildHouse = buildHouse; window.__SEATS = SEATS; window.__goPlace = id => goPlace(id); window.__adopt = id => adopt(W, id); window.__give = (who, id) => give(who, W.items.find(i => i.id === id)); }
+  if (window.__DEBUG) { window.__W = W; window.__tap = (h, pt) => onTap(h, pt || [960, 540]); window.__switch = id => switchTo(id); window.__pick = id => pickPlace(id); window.__ROOMS = ROOMS; window.__nav = nav; window.__openMap = () => openMap(); window.__buildHouse = buildHouse; window.__SEATS = SEATS; window.__goPlace = id => goPlace(id); window.__adopt = id => adopt(W, id); window.__worldsUI = () => setWorlds('menu'); window.__give = (who, id) => give(who, W.items.find(i => i.id === id)); }
 
   useEffect(() => { const r = () => setSize({ w: window.innerWidth, h: window.innerHeight }); window.addEventListener('resize', r); return () => window.removeEventListener('resize', r); }, []);
   useEffect(() => { const h = setTimeout(() => setHint(false), 12000); return () => clearTimeout(h); }, []);
 
   // first entrance: Callie walks in and waves
   useEffect(() => {
+    if (W.fresh) return;
     later(W, 0.6, () => { SFX.door(); });
     later(W, 0.8, () => { c.op = 1; walkTo(W, c, 3.5, 3.5, () => { c.action = { kind: 'wave', t0: W.T, dur: 1.6 }; later(W, 0.4, () => { W.flags.myDoor = false; SFX.door(); }); }); });
     spawnSpider(W, 'hallway');
@@ -218,7 +236,7 @@ function App() {
   W.panelOpen = !!panel;
   // saving
   const saveNow = () => {
-    store(SAVE_KEY, { items: W.items.map(({ id, kind, c: col, stripe, fillings: f, room, loc, rot, home, quest, layers, forWho, errand, label, bought }) => ({ id, kind, c: col, stripe, fillings: f, room, loc, rot, home, quest, layers, forWho, errand, label, bought })), hw: { stage: W.hw.stage, year: W.hw.year, pumpkin: W.hw.pumpkin }, xm: { stage: W.xm.stage, year: W.xm.year, tree: W.xm.tree }, asks: { ducks: { state: W.asks.ducks.state, who: W.asks.ducks.who }, school: { state: W.asks.school.state } }, uniform: W.uniform, spiderN: W.spiderN, seasonPick: W.seasonPick, folk: W.folk, sky: skySave(W), coins: W.coins, wardrobe: W.wardrobe, ach: W.ach, visited: W.visited, outfits: st.current.outfits, hunt: W.hunt, quests: W.quests, errand: W.errand, errN: W.errN, traits: W.traits, friends: W.friends, pets: savePets(W), town: W.town, met: W.met, lettersRead: W.lettersRead, letter: W.letter, goalUp: W.goal.up, lights: W.flags.lights, blind: W.flags.blind, muted: st.current.muted, voice: st.current.voice });
+    store(SAVE_KEY, { items: W.items.map(({ id, kind, c: col, stripe, fillings: f, room, loc, rot, home, quest, layers, forWho, errand, label, bought }) => ({ id, kind, c: col, stripe, fillings: f, room, loc, rot, home, quest, layers, forWho, errand, label, bought })), hw: { stage: W.hw.stage, year: W.hw.year, pumpkin: W.hw.pumpkin }, xm: { stage: W.xm.stage, year: W.xm.year, tree: W.xm.tree }, asks: { ducks: { state: W.asks.ducks.state, who: W.asks.ducks.who }, school: { state: W.asks.school.state } }, uniform: W.uniform, spiderN: W.spiderN, seasonPick: W.seasonPick, folk: W.folk, sky: skySave(W), coins: W.coins, wardrobe: W.wardrobe, ach: W.ach, visited: W.visited, outfits: st.current.outfits, hunt: W.hunt, quests: W.quests, errand: W.errand, errN: W.errN, traits: W.traits, friends: W.friends, pets: savePets(W), town: W.town, fresh: W.fresh, owner: W.owner, player: W.fresh ? W.player : undefined, worldName: W.worldName, met: W.met, lettersRead: W.lettersRead, letter: W.letter, goalUp: W.goal.up, lights: W.flags.lights, blind: W.flags.blind, muted: st.current.muted, voice: st.current.voice });
     W.dirty = false;
   };
   useEffect(() => { W.dirty = true; }, [outfits, muted, voice]);
@@ -905,6 +923,16 @@ function App() {
     if (!ids.includes(W.player)) ids.push(W.player);
     return [...new Set(ids)].filter(k => W.people[k] && NAMES[k]);
   }
+  function makeFirst(d) {
+    const def = createPerson(W, d, 'new'); if (!def) return;
+    W.owner = def.id; W.player = def.id; W.prevPlayer = def.id;
+    W.worldName = `${def.name}'s world`; nameWorld(currentWorld(), W.worldName, [def.hairCol, def.color, def.skin]);
+    setOutfits(o => ({ ...o, [def.id]: def.outfit }));
+    arriveAt(W, 'h:' + def.fam, []); petHouse(W);
+    W.dirty = true; saveNow(); SFX.fanfare(); setFrame(n => n + 1);
+    later(W, 0.8, () => { speak(`Welcome to ${def.name}'s world! This is your house.`, 'narrator'); const q = W.people[def.id]; if (q) q.action = { kind: 'wave', t0: W.T, dur: 1.6 }; });
+    later(W, 5, () => speak('Tap Families to make your family and friends.', 'narrator'));
+  }
   function makePerson(d, home) {
     const def = createPerson(W, d, home);
     if (!def) { showToast('New Street is full!'); return; }
@@ -1175,7 +1203,7 @@ function App() {
       if (c.mode === 'lie') { if (c.sleep) burst(W, 'hearts', headAt(c)); else if (c.bed === 'callie:bed' && me === 'callie') { c.tabletOn = !c.tabletOn; SFX.pop(); } else hopOffBed(W, c); return; }
       if (c.reading) return;
       c.action = { kind: 'cheer', t0: W.T, dur: 1.2 }; SFX.sparkle(); burst(W, 'spark', headAt(c), { n: 10, spread: 90 }); burst(W, 'hearts', headAt(c));
-      say(W, me, pick({ callie: ['Hello!', 'I am Callie!', 'Yay!', 'I like my house!'], chloe: ['Hi. I am Chloe.', 'Whatever.', 'I like black.'], mum: ['Hello!', 'Who wants tea?', 'Time to tidy up!'], dad: ['Hello!', 'Who wants a snack?', 'Dad jokes!'], connor: ['Yo!', 'I am Connor.', 'Rematch?'] }[me]));
+      say(W, me, pick({ callie: ['Hello!', 'I am Callie!', 'Yay!', 'I like my house!'], chloe: ['Hi. I am Chloe.', 'Whatever.', 'I like black.'], mum: ['Hello!', 'Who wants tea?', 'Time to tidy up!'], dad: ['Hello!', 'Who wants a snack?', 'Dad jokes!'], connor: ['Yo!', 'I am Connor.', 'Rematch?'] }[me] || [`I am ${NAMES[me]}!`, 'Hello!', 'Yay!', 'I like my house!']));
       return;
     }
     if (W.hide && W.hide.who === id && W.hide.phase === 'seek') { foundHider(W, q => { burst(W, 'confetti', headAt(q)); showToast(`You found ${NAMES[id]}!`); }); return; }
@@ -1556,6 +1584,9 @@ function App() {
             : R === 'shop' && W.shop && !W.shop.done ? <ShoppingList list={W.shop.list} got={W.shop.got} onRead={() => speak('We need ' + W.shop.list.map(g => GROC[g][0]).join(', ') + '.', 'narrator')} />
             : now ? (now.id === 'hunt' ? <button className="hunt" onClick={() => speak(`Find the ${target}.`, 'narrator')}><span className="hunt-q">Find the</span> <b>{target}</b><span className="hunt-n">{W.hunt.idx + 1}/{HUNT_ORDER.length}</span></button>
               : <button className={'quest now' + (now.id === 'spooky' || now.id === 'pumpkin' ? ' spooky' : '')} onClick={() => speak(now.text, 'narrator')}><JobIcon kind={now.icon} size={28} /><span>{now.text}</span></button>)
+            : W.fresh ? (Object.keys(W.folk.people).length < 2 ? <button className="quest now" onClick={() => { speak('Make your family and friends!', 'narrator'); setPanel({ kind: 'fams' }); }}><JobIcon kind="star" size={28} /><span>Make your family</span></button>
+              : !Object.keys(W.town.shops).length ? <button className="quest now" onClick={() => { speak('Build a shop in town!', 'narrator'); openMap(); later(W, 0.3, () => setPanel(pn => (pn && pn.kind === 'map' ? { ...pn, tb: {} } : pn))); }}><JobIcon kind="shopping" size={28} /><span>Build a shop</span></button>
+              : <button className="hunt done-all" onClick={() => openJobs('stickers')}>Stickers</button>)
             : <button className="hunt done-all" onClick={() => openJobs('stickers')}>You found them all!</button>}
           <button className={'jobs-btn' + (stickerPop ? ' glow' : '')} onClick={() => openJobs()} aria-label={`Jobs, ${jobList.length} to do`}>
             <svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><rect x="6" y="5" width="20" height="25" rx="3" fill="#fffaf0" stroke="#8a5a33" strokeWidth="2.2" /><rect x="11" y="2.5" width="10" height="5.5" rx="2" fill="#e0a92e" stroke="#8a5a33" strokeWidth="1.8" /><path d="M10,14 l2,2 4,-4 M10,22 l2,2 4,-4" fill="none" stroke="#4cc76a" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /><path d="M18.5,15 h4 M18.5,23 h4" stroke="#8a5a33" strokeWidth="2" strokeLinecap="round" /></svg>
@@ -1571,7 +1602,7 @@ function App() {
         <button className="iconbtn" onClick={() => setMuted(m => !m)} aria-label={muted ? 'Turn sound on' : 'Turn sound off'}><svg viewBox="0 0 24 24" width="24" height="24"><path d="M4,9 L8,9 13,5 13,19 8,15 4,15Z" fill="currentColor" />{muted ? <path d="M16,9 L21,14 M21,9 L16,14" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" /> : <path d="M16,9 Q18.5,12 16,15 M18.5,6.5 Q23,12 18.5,17.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />}</svg></button>
         <button className="iconbtn" onClick={() => { setMenu(m => !m); setConfirmReset(false); }} aria-label="Grown-up menu" aria-expanded={menu}><svg viewBox="0 0 24 24" width="24" height="24"><circle cx="5" cy="12" r="2.2" fill="currentColor" /><circle cx="12" cy="12" r="2.2" fill="currentColor" /><circle cx="19" cy="12" r="2.2" fill="currentColor" /></svg></button>
         {menu && <div className="menu" onPointerDown={e => e.stopPropagation()}>
-          {!confirmReset ? <><p>Grown-ups</p><button className="pill" onClick={() => { W.seasonPick = SEASON_CYCLE[(SEASON_CYCLE.indexOf(W.seasonPick) + 1) % SEASON_CYCLE.length]; W.dirty = true; if (isHalloween(W) && W.hw.stage === 'none') W.hw.askT = Math.min(W.hw.askT, W.T + 4); if (isChristmas(W) && W.xm.stage === 'none') W.xm.askT = Math.min(W.xm.askT, W.T + 4); SFX.click(); }}>Season: {SEASON_LABEL[W.seasonPick]}{W.seasonPick === 'auto' ? ` (${seasonOf('auto') === 'none' ? 'none now' : SEASON_LABEL[seasonOf('auto')]})` : ''}</button><button className="pill" onClick={() => { W.timePick = TIME_CYCLE[(TIME_CYCLE.indexOf(W.timePick) + 1) % TIME_CYCLE.length]; if (W.timePick === 'auto') W.clock = 9; W.dirty = true; SFX.click(); }}>Time: {TIME_LABEL[W.timePick]}</button><button className="pill" onClick={() => { W.weatherPick = WEATHER_CYCLE[(WEATHER_CYCLE.indexOf(W.weatherPick) + 1) % WEATHER_CYCLE.length]; W.dirty = true; SFX.click(); }}>Weather: {WEATHER_LABEL[W.weatherPick]}</button><button className="pill" onClick={() => { earn(W, 50); SFX.coins(); }}>Give 50 coins</button><button className="pill" onClick={() => { W.folk.creative = !W.folk.creative; W.dirty = true; SFX.click(); }}>Decorating: {isFree(W) ? 'Free' : 'Coins'}</button><button className="pill" onClick={() => setConfirmReset(true)}>Start again</button></>
+          {!confirmReset ? <><p>Grown-ups</p><button className="pill" onClick={() => { setMenu(false); setWorlds('menu'); }}>Change world</button><button className="pill" onClick={() => { W.seasonPick = SEASON_CYCLE[(SEASON_CYCLE.indexOf(W.seasonPick) + 1) % SEASON_CYCLE.length]; W.dirty = true; if (isHalloween(W) && W.hw.stage === 'none') W.hw.askT = Math.min(W.hw.askT, W.T + 4); if (isChristmas(W) && W.xm.stage === 'none') W.xm.askT = Math.min(W.xm.askT, W.T + 4); SFX.click(); }}>Season: {SEASON_LABEL[W.seasonPick]}{W.seasonPick === 'auto' ? ` (${seasonOf('auto') === 'none' ? 'none now' : SEASON_LABEL[seasonOf('auto')]})` : ''}</button><button className="pill" onClick={() => { W.timePick = TIME_CYCLE[(TIME_CYCLE.indexOf(W.timePick) + 1) % TIME_CYCLE.length]; if (W.timePick === 'auto') W.clock = 9; W.dirty = true; SFX.click(); }}>Time: {TIME_LABEL[W.timePick]}</button><button className="pill" onClick={() => { W.weatherPick = WEATHER_CYCLE[(WEATHER_CYCLE.indexOf(W.weatherPick) + 1) % WEATHER_CYCLE.length]; W.dirty = true; SFX.click(); }}>Weather: {WEATHER_LABEL[W.weatherPick]}</button><button className="pill" onClick={() => { earn(W, 50); SFX.coins(); }}>Give 50 coins</button><button className="pill" onClick={() => { W.folk.creative = !W.folk.creative; W.dirty = true; SFX.click(); }}>Decorating: {isFree(W) ? 'Free' : 'Coins'}</button><button className="pill" onClick={() => setConfirmReset(true)}>Start again</button></>
             : <><p>Put everything back and start again? Her paintings and stickers stay.</p><div className="pair"><button className="pill warn" onClick={() => { W.items = startItems(); W.hunt = { idx: 0, done: [] }; resetHalloween(W); resetXmas(W); W.asks.ducks.state = 'idle'; W.asks.school.state = 'idle'; W.uniform = {}; setOutfits(DEFAULT_OUTFITS); W.dirty = true; saveNow(); setMenu(false); setConfirmReset(false); SFX.whoosh(); }}>Yes, start again</button><button className="pill" onClick={() => setConfirmReset(false)}>Cancel</button></div></>}
         </div>}
       </div>
@@ -1594,7 +1625,9 @@ function App() {
     {hint && !panel && <div className="hint">Tap to walk. Tap things to hear their names. Tap the door signs to go to other rooms.</div>}
     {toast && <div className="toast">{toast}</div>}
     {stickerPop && STICKER[stickerPop.id] && <button key={stickerPop.t} className="sticker-pop" onPointerDown={e => e.stopPropagation()} onClick={() => openJobs('stickers')}><JobIcon kind={STICKER[stickerPop.id].icon} size={46} /><span><small>New sticker!</small><b>{STICKER[stickerPop.id].title}</b></span></button>}
-    {splash && <Splash onStart={() => { window.__splashing = false; setSplash(false); AUDIO.unlocked = true; audio(); SFX.sparkle(); later(W, 0.4, () => speak("Welcome to Callie's House!", 'narrator')); }} />}
+    {splash && <Splash onStart={() => { window.__splashing = false; setSplash(false); AUDIO.unlocked = true; audio(); SFX.sparkle(); setWorlds('start'); later(W, 0.4, () => speak('Which world shall we play?', 'narrator')); }} />}
+    {worlds && !splash && <WorldPicker closable={worlds === 'menu'} saveNow={saveNow} onClose={() => setWorlds(null)} onPlay={() => { setWorlds(null); later(W, 0.3, () => speak(W.fresh ? (W.owner ? `Welcome back to ${W.worldName}!` : 'A new world! First, make yourself.') : "Welcome to Callie's House!", 'narrator')); }} />}
+    {W.fresh && !W.owner && !splash && !worlds && <div className="first-run"><CreatorPanel key="first" first W={W} T={T} onClose={() => setWorlds('menu')} onMake={makeFirst} /></div>}
     {build && W.folk.fams[build.fam] && <BuildPanel W={W} fam={W.folk.fams[build.fam]} rk={build.rk} b={build} coins={W.coins} onGoRoom={buildGo} onNewLayout={buildNewLayout}
       onWallSide={v => patchBuild({ wallSide: v })} onRugPick={() => { patchBuild({ sel: 'rug' }); SFX.pop(); }}
       onRugSize={(k, turn) => { const f = buildFam(); setStyle({ rugAt: rugSized(geoOf(f, build.rk), f.rooms[build.rk].style, k, turn) }); patchBuild({ sel: 'rug' }); }}

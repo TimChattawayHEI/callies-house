@@ -7,6 +7,7 @@ import { P, rand, pick, dist, SFX, speak, earn, achieve } from './core.js';
 import { nav, later, player, setExtraBlocks } from './world.js';
 import { ROOMS } from './rooms.jsx';
 import { PetKit, Iso } from '../rooms.gen.jsx';
+import { houseRooms, planOf } from './homes.jsx';
 
 const { PetArt, PETS, BY_ID, SIZE, CATS, HEART } = PetKit;
 const { Box, FaceX, FaceY, FloorPlane } = Iso;
@@ -30,8 +31,37 @@ const FOOD = {
 export const FOODS = ['dog food', 'cat food', 'fish food', 'bird seed', 'carrots', 'lettuce', 'seeds'];
 const NOISE = { dog: ['Woof!', 'Woof woof!', 'Ruff!'], cat: ['Meow!', 'Purr...', 'Mew!'], bird: ['Tweet!', 'Cheep cheep!'], fish: ['Blub!', 'Bloop!'], bunny: ['Sniff sniff!'], hamster: ['Squeak!'], guinea: ['Wheek wheek!'], tortoise: ['...'] };
 const KIND_WORD = { dog: 'dogs', cat: 'cats', fish: 'fish', bird: 'birds', bunny: 'bunnies', hamster: 'hamsters', guinea: 'guinea pigs', tortoise: 'tortoises' };
-const CAT_ROOMS = ['living', 'middle', 'kitchen', 'garden'];
-const callieHouse = r => !!(ROOMS[r] && !ROOMS[r].town && !ROOMS[r].fam);
+let CAT_ROOMS = ['living', 'middle', 'kitchen', 'garden'];
+let callieHouse = r => !!(ROOMS[r] && !ROOMS[r].town && !ROOMS[r].fam);
+const atHome = (W, R) => (W.fresh ? callieHouse(R) : !W.out && callieHouse(R));
+// In a new world the pets live in your own house: find room for their beds, tanks and cages there.
+export function petHouse(W) {
+  const d = W.folk && W.folk.people[W.owner], fam = d && W.folk.fams[d.fam]; if (!fam) return;
+  const rooms = houseRooms(fam), plan = planOf(fam), has = rk => (plan.rooms[rk] ? fam.id + ':' + rk : null);
+  callieHouse = r => rooms.includes(r);
+  CAT_ROOMS = ['living', 'kitchen', 'garden', 'hall'].map(has).filter(Boolean);
+  const want = { bed: ['living', 'kitchen'], tank: ['living', 'kitchen', 'bed1'], tree: ['living', 'kitchen', 'bed1'], cage: ['kitchen', 'living', 'bed1'], hutch: ['garden', 'balcony', 'living'] };
+  const taken = {};
+  const ov = (a, b) => a[0] < b[1] && b[0] < a[1] && a[2] < b[3] && b[2] < a[3];
+  for (const h of ['bed', 'tank', 'tree', 'cage', 'hutch']) {
+    const H = HOMES[h], w = h === 'tank' ? 1.3 : H.w, dd = h === 'tank' ? 0.5 : H.d, ext = H.bowl ? 0.4 : 0;
+    for (const rk of want[h]) {
+      const rid = has(rk); if (!rid || !ROOMS[rid]) continue;
+      const N = nav(rid), [x0, x1, y0, y1] = ROOMS[rid].bounds, doors = ROOMS[rid].doors || [];
+      let spot = null;
+      for (let y = y0 + 0.05; y <= y1 - dd - ext - 0.3 && !spot; y += 0.25) for (let x = x0 + 0.05; x <= x1 - w - 0.1 && !spot; x += 0.25) {
+        const r = [x - 0.1, x + w + 0.1, y - 0.05, y + dd + ext + 0.1];
+        if ((taken[rid] || []).some(t => ov(t, r))) continue;
+        if (doors.some(dr => (dr.zone && ov([r[0] - 0.6, r[1] + 0.6, r[2] - 0.6, r[3] + 0.6], dr.zone)) || (dr.at && Math.hypot(dr.at[0] - (x + w / 2), dr.at[1] - (y + dd / 2)) < 1.6))) continue;
+        let ok = true;
+        for (let px = r[0]; px <= r[1] + 1e-6 && ok; px += 0.2) for (let py = r[2]; py <= r[3] + 1e-6 && ok; py += 0.2) if (!N.free(px, py, 0.02)) ok = false;
+        if (ok) spot = { x, y, r };
+      }
+      if (spot) { Object.assign(H, { room: rid, x: spot.x, y: spot.y, w, d: dd, face: undefined }); (taken[rid] = taken[rid] || []).push(spot.r); break; }
+    }
+  }
+  updateBlocks(W);
+}
 const dogCanGo = r => callieHouse(r) || r === 'park' || r === 'pets';
 
 /* ---------------- saving and loading ---------------- */
@@ -103,7 +133,7 @@ export function stepPets(W, dt, fx) {
   if (!W.pets.length) return;
   const c = player(W), R = W.room, moved = W.petRoom !== R;
   W.petRoom = R;
-  const home = !W.out && callieHouse(R);
+  const home = atHome(W, R);
   // needs grow slowly while she plays
   for (const p of W.pets) {
     const k = kindOf(p), was = p.hunger;

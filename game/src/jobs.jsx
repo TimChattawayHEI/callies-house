@@ -117,7 +117,7 @@ export function todos(W) {
   if (W.room === 'cafe' && W.cafe) list.push({ id: 'cafe', icon: W.cafe.order[0], text: W.cafe.ready ? 'Collect your order' : 'Waiting for your order', tip: W.cafe.ready ? 'Tap COLLECT on the counter.' : 'It will be ready soon.' });
   for (const [who, q] of Object.entries(W.quests || {})) if (q.state === 'active') { const Q = QUESTS[who], it = W.items.find(i => i.quest === who); list.push({ id: 'q-' + who, icon: Q.kind, text: `Find ${Q.chip}`, tip: (whereIs(W, it) || '') + (who === 'connor' ? ' Then knock on his door.' : ' Then give it to Chloe.') }); }
   if (isHalloween(W) && W.hw && W.hw.stage === 'asked') list.push({ id: 'spooky', icon: 'spooky', text: 'Get the spooky box', tip: 'It is in the cardboard boxes in the attic. Then give it to Mum.' });
-  if (isHalloween(W) && W.hw && !W.hw.pumpkin) list.push({ id: 'pumpkin', icon: 'pumpkin', text: 'Carve the pumpkin', tip: 'The pumpkin is in the kitchen, on top of the washing machine.' });
+  if (!W.fresh && isHalloween(W) && W.hw && !W.hw.pumpkin) list.push({ id: 'pumpkin', icon: 'pumpkin', text: 'Carve the pumpkin', tip: 'The pumpkin is in the kitchen, on top of the washing machine.' });
   if (W.lightAsk && !W.out) { const n = LIGHT_ROOMS.filter(r => isLit(W, r)).length; const dark = LIGHT_ROOMS.filter(r => !isLit(W, r)).map(roomName);
     list.unshift({ id: 'lights', icon: 'bulb', text: 'Turn the lights on', count: `${n}/${LIGHT_ROOMS.length}`, tip: `Tap the light bulb button. Still dark: ${dark.join(', ')}.` }); }
   if (W.bedAsk && !W.bedtime && !W.out && W.player === 'callie') list.unshift({ id: 'bed', icon: 'moon', text: 'Go to bed', tip: 'Go to your room, get into bed, then turn off the light.' });
@@ -135,7 +135,7 @@ export function todos(W) {
   if (job) list.push(job);
   for (const t of petTodos(W)) list.push(t);
   if (W.letter && !W.out) list.push({ id: 'letter', icon: 'letter', text: 'Read the letter', tip: 'It is on the mat by the front door.' });
-  const target = HUNT_ORDER[W.hunt.idx];
+  const target = !W.fresh && HUNT_ORDER[W.hunt.idx];
   if (target) list.push({ id: 'hunt', icon: target, text: `Find the ${target}`, count: `${W.hunt.idx + 1}/${HUNT_ORDER.length}`, tip: whereIs(W, W.items.find(i => i.kind === target)) || 'Look all round the house!' });
   return list;
 }

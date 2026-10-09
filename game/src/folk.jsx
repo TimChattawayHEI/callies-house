@@ -155,11 +155,11 @@ export function Keyboard({ onKey }) {
   return <div className="kb">{rows.map(r => <div key={r} className="kb-row">{r.split('').map(ch => <button key={ch} className="kb-key" onClick={() => onKey(ch)}>{ch}</button>)}{r === 'VWXYZ' && <button className="kb-key wide" onClick={() => onKey('<')} aria-label="Delete a letter">⌫</button>}</div>)}</div>;
 }
 export const prettyName = s => (s ? s[0] + s.slice(1).toLowerCase() : '');
-export function CreatorPanel({ W, T, onMake, onClose, edit }) {
+export function CreatorPanel({ W, T, onMake, onClose, edit, first }) {
   const old = edit ? folkDef(W, edit) : null;
   const [d, setD] = useState(() => old ? { name: old.name.toUpperCase(), body: old.body, skin: old.skin, hair: old.hair, hairCol: old.hairCol, glasses: !!old.glasses, beard: !!old.beard, voice: old.voice || 'high', top: old.top || (old.outfit && old.outfit.top) || 'tee', color: old.color || (old.outfit && old.outfit.color) || BRIGHT[0], traits: old.traits || randomTraits(), likes: old.likes || randomLikes() }
     : { name: '', body: 'kid', skin: pick(SKINS), hair: pick(['pony', 'long', 'short', 'curly']), hairCol: pick(HAIR_COLS.slice(0, 5)), glasses: false, beard: false, voice: 'high', top: pick(['tee', 'dress', 'hoodie']), color: pick(BRIGHT), traits: randomTraits(), likes: randomLikes() });
-  const [home, setHome] = useState(old ? old.fam : freePlot(W) != null ? 'new' : 'home');
+  const [home, setHome] = useState(old ? old.fam : freePlot(W) != null || first ? 'new' : W.fresh ? (Object.keys(W.folk.fams)[0] || 'new') : 'home');
   const [house, setHouse] = useState('terrace');
   const set = (k, v, word) => { setD(o => ({ ...o, [k]: v })); if (word) speak(word, 'word'); SFX.pop(); };
   const name = prettyName(d.name);
@@ -173,7 +173,7 @@ export function CreatorPanel({ W, T, onMake, onClose, edit }) {
   const sw = (k, list) => <div className="choices">{list.map(v => <button key={v} className="sw" style={{ '--c': v }} aria-pressed={d[k] === v} aria-label={k} onClick={() => set(k, v)} />)}</div>;
   const hairIcon = h => { registerPerson({ ...d, hair: h, id: '__h' + h, name: 'x', outfit }); return <HeadIcon who={'__h' + h} o={outfit} size={40} />; };
   return <div className="sheet maker" role="dialog" aria-label="Make a new person" onPointerDown={e => e.stopPropagation()}>
-    <div className="box-head"><button className="room-chip" onClick={() => speak(old ? `Change ${old.name}` : 'Make a new person!', 'narrator')}>{old ? `Change ${prettyName(old.name.toUpperCase())}` : 'Make a new person!'}</button><button className="pill" onClick={onClose}>Close</button></div>
+    <div className="box-head"><button className="room-chip" onClick={() => speak(first ? 'Make yourself!' : old ? `Change ${old.name}` : 'Make a new person!', 'narrator')}>{first ? 'Make yourself!' : old ? `Change ${prettyName(old.name.toUpperCase())}` : 'Make a new person!'}</button><button className="pill" onClick={onClose}>{first ? 'Worlds' : 'Close'}</button></div>
     <div className="dress-body">
       <div className="preview">
         <svg viewBox={`-70 ${-hTot} 140 ${hTot + 16}`} aria-hidden="true"><ellipse cx={0} cy={4} rx={50} ry={10} fill="rgba(90,60,30,.12)" /><Person who="__new" o={outfit} pose={pose} T={T} uid="maker" /></svg>
@@ -194,8 +194,8 @@ export function CreatorPanel({ W, T, onMake, onClose, edit }) {
         <div className="opt-row"><h3>Personality</h3><TraitPicker t={d.traits} likes={d.likes} who={name} onT={t => setD(o => ({ ...o, traits: t }))} onLikes={l => setD(o => ({ ...o, likes: l }))} /></div>
         <div className="opt-row"><h3>Home</h3><div className="choices">
           <button className="tile word-tile" disabled={freePlot(W) == null} aria-pressed={home === 'new'} onClick={() => { setHome('new'); speak('A new house!', 'narrator'); }}>new house</button>
-          <button className="tile word-tile" aria-pressed={home === 'home'} onClick={() => { setHome('home'); speak("Callie's house", 'narrator'); }}>Callie's house</button>
-          {fams.map(f => <button key={f.id} className="tile word-tile fam-tile" aria-pressed={home === f.id} onClick={() => { setHome(f.id); speak(`${f.name}'s house`, 'narrator'); }}><span className="fam-heads">{f.members.slice(0, 3).map(m => <HeadIcon key={m} who={m} o={DEFAULT_OUTFITS[m]} size={22} />)}</span>{f.name}'s</button>)}
+          {!W.fresh && <button className="tile word-tile" aria-pressed={home === 'home'} onClick={() => { setHome('home'); speak("Callie's house", 'narrator'); }}>Callie's house</button>}
+          {!first && fams.map(f => <button key={f.id} className="tile word-tile fam-tile" aria-pressed={home === f.id} onClick={() => { setHome(f.id); speak(`${f.name}'s house`, 'narrator'); }}><span className="fam-heads">{f.members.slice(0, 3).map(m => <HeadIcon key={m} who={m} o={DEFAULT_OUTFITS[m]} size={22} />)}</span>{f.name}'s</button>)}
         </div>{freePlot(W) == null && <small className="note">The town is full, so pick a family to join.</small>}
         {home === 'new' && <div className="type-row">{Object.entries(HOUSE_TYPES).map(([k, t]) => <button key={k} className="type-tile" aria-pressed={house === k} onClick={() => { setHouse(k); speak(t.name, 'word'); SFX.pop(); }}><HouseIcon type={k} size={54} /><b>{t.name}</b><small>{t.note}</small></button>)}</div>}</div>
         <button className="done make-go" disabled={!name} onClick={() => onMake({ ...d, name, house, outfit: outfitFor(d.body, d.top, d.color) }, home)}>{!name ? 'Type a name first' : old ? `Save ${name}!` : `Make ${name}!`}</button>
@@ -209,7 +209,7 @@ const later0 = f => setTimeout(f, 120);
 export function FamiliesPanel({ W, outfits, here, onVisit, onNew, onEdit, onAbout, onClose }) {
   const [editing, setEditing] = useState(false);
   const homeJoin = Object.values(W.folk.people).filter(p => p.fam === 'home').map(p => p.id);
-  const fams = [{ id: 'home', place: 'home', name: 'Callie', members: [...CALLIE_FAM, ...homeJoin], look: { wall: '#e2b06a', roof: '#9a4a3a' } },
+  const fams = [...(W.fresh ? [] : [{ id: 'home', place: 'home', name: 'Callie', members: [...CALLIE_FAM, ...homeJoin], look: { wall: '#e2b06a', roof: '#9a4a3a' } }]),
     ...Object.values(W.folk.fams).map(f => ({ id: f.id, place: 'h:' + f.id, name: f.name, members: f.members, look: houseLook(f.seed), type: f.plan ? f.plan.type : 'house' }))];
   return <div className="sheet families" role="dialog" aria-label="Families" onPointerDown={e => e.stopPropagation()}>
     <div className="box-head"><button className="room-chip" onClick={() => speak('Families', 'word')}>Families</button><button className="done" onClick={onClose}>Done</button></div>
