@@ -310,6 +310,19 @@ button:focus-visible { outline: 3px solid var(--pink); outline-offset: 3px; }
 .tb-things .food-tile { flex-wrap: wrap; } .tb-things .pet-price { margin-left: auto; }
 @media (max-width: 640px) { .tb-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .tb-name-body { grid-template-columns: 1fr; } .tb-preview .shop-art { height: 110px !important; } .tb-says { font-size: 14px; } }
 /* pet shop */
+.sheet.backup { width: min(560px, calc(100% - 24px)); overflow-y: auto; }
+.bk-what { margin: 0; font: 600 15px var(--read); }
+.bk-row { display: flex; align-items: center; gap: 12px; background: #fff; border: 2px solid var(--line); border-radius: 18px; padding: 10px 12px; }
+.bk-row > div { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.bk-row b { font: 800 18px var(--display); }
+.bk-row small { font: 500 14px var(--read); opacity: .85; }
+.bk-row button { flex: none; }
+.bk-file { display: none; }
+.bk-confirm p { margin: 0 0 8px; font: 600 16px var(--read); }
+.bk-warn { color: var(--pink-deep); }
+.bk-msg { margin: 0; padding: 8px 12px; border-radius: 14px; background: #e6f6e9; font: 700 15px var(--read); }
+.bk-msg.bad { background: #fde6ec; color: var(--pink-deep); }
+@media (max-width: 520px) { .bk-row { flex-direction: column; align-items: stretch; } }
 .sheet.petshop { width: min(900px, calc(100% - 24px)); max-height: min(92vh, 640px); }
 .sheet.petshop .box-head { gap: 8px; }
 .coins-pill { display: inline-flex; align-items: center; gap: 6px; background: var(--ink, #3b2a24); color: #fff6ea; border-radius: 999px; padding: 4px 12px 4px 6px; font: 800 18px var(--display); margin-left: auto; }
