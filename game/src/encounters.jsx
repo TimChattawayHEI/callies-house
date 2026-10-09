@@ -103,7 +103,7 @@ export function stepPost(W) {
   const g = ['mum', 'dad'].find(k => k !== W.player && W.people[k] && W.people[k].room);
   if (g) later(W, 0.6, () => say(W, g, pick(['Post! A letter for you!', 'The post is here!', 'There is a letter on the mat!']), W.people[g].room === W.room ? null : { type: 'off', id: g }));
 }
-export const letterOf = W => (W.letter ? LETTERS[W.letter.i] : null);
+export const letterOf = W => (W.letter ? (W.letter.lines ? { from: W.letter.from, lines: W.letter.lines } : LETTERS[W.letter.i]) : null);
 export function readLetter(W) {
   W.letter = null; W.letterNext = W.T + rand(300, 480); W.lettersRead = (W.lettersRead || 0) + 1; W.dirty = true;
   earn(W, 3); if (W.lettersRead >= 3) later(W, 1, () => achieve(W, 'post'));

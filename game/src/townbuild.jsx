@@ -182,10 +182,11 @@ function ThingIcon({ t, size = 48 }) {
   if (t.service) return <svg viewBox="-14 -14 28 28" width={size} height={size} aria-hidden="true"><path d="M0,-11 L3,-3 11,-3 5,2 7,10 0,5 -7,10 -5,2 -11,-3 -3,-3Z" fill="#ffd45e" stroke="#e0a92e" strokeWidth={1.4} /></svg>;
   return <ItemIcon it={{ kind: 'shopping' }} size={size} />;
 }
-export function ShopBuyPanel({ W, sh, onBuy, onClose }) {
+export function ShopBuyPanel({ W, sh, onBuy, onClose, onShift, onCollect }) {
   const T = BY[sh.type], list = sellsOf(sh.type);
   return <div className="sheet tb-buy" role="dialog" aria-label={sh.name} onPointerDown={e => e.stopPropagation()}>
     <div className="box-head"><button className="room-chip" onClick={() => speak(`${sh.name}. What would you like?`, 'narrator')}>{sh.name}</button><span className="coins-pill"><i />{W.coins}</span><button className="pill" onClick={onClose}>Close</button></div>
+    <div className="tb-work">{onShift && <button className="pill build-pill" onClick={onShift}>Help in the shop</button>}{onCollect && Math.floor(sh.till || 0) >= 1 && <button className="pill dark" onClick={onCollect}>Collect <span className="coin-tag"><i />{Math.floor(sh.till)}</span></button>}</div>
     <p className="tb-q">What would you like?</p>
     <div className="tb-things">{list.map(t => <button key={t.word} className="tile food-tile" disabled={W.coins < t.price} onClick={() => onBuy(t)}><ThingIcon t={t} /><span>{t.word}</span><span className="pet-price"><i />{t.price}</span></button>)}</div>
     <small className="note">{T.type}</small>

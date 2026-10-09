@@ -101,7 +101,7 @@ export const TIDY_TOTAL = 14;
 export const later = (W, d, fn) => W.timers.push({ at: W.T + d, fn });
 let bubbleId = 0;
 export function say(W, who, text, anchor, opts = {}) {
-  if (W.out && anchor && (anchor.type === 'off' || anchor.type === 'ceiling')) return { id: -1 };
+  if (W.out && !W.fresh && anchor && (anchor.type === 'off' || anchor.type === 'ceiling')) return { id: -1 };
   const b = { id: ++bubbleId, who, text, anchor: anchor || { type: 'person', id: who }, t0: W.T, dur: opts.dur || Math.max(2.6, 1.2 + text.split(' ').length * 0.55), style: opts.style || 'say', spoken: false, quiet: !!opts.quiet };
   W.bubbles = W.bubbles.filter(x => !(x.anchor.type === b.anchor.type && x.anchor.id === b.anchor.id && b.anchor.type === 'person'));
   W.bubbles.push(b);

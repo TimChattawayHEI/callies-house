@@ -5,6 +5,7 @@ import { rand, pick, dist, SFX, speak } from './core.js';
 import { say, later, walkTo, nav } from './world.js';
 import { NAMES } from './people.jsx';
 import { ItemIcon } from './items.jsx';
+import { relLines, wordFor, callName, familyWith } from './relations.js';
 
 /* ---------------- the sliders ---------------- */
 // 0..4 from the left word to the right word. 2 is in the middle.
@@ -77,7 +78,8 @@ export function describe(W, id) {
   if (words.length) out.push(`${name} is ${andList(words.slice(0, 2))}.`);
   if (words.length > 2) out.push(`${name} is ${andList(words.slice(2))} too.`);
   if (P.likes.length) out.push(`${name} likes ${andList(P.likes.map(l => LIKES[l] ? LIKES[l].word : l))}.`);
-  const bf = bestFriend(W, id); if (bf) out.push(`${name}'s best friend is ${NAMES[bf]}.`);
+  for (const l of relLines(W, id)) out.push(l);
+  const bf = bestFriend(W, id); if (bf && !relLines(W, id).some(l => l.includes(NAMES[bf]))) out.push(`${name}'s best friend is ${NAMES[bf]}.`);
   return out;
 }
 export function helloLine(W, id) {
@@ -157,6 +159,14 @@ function braveScene(W, a, b) {
   if (A.t.brave >= 3) return { lines: [['a', pick(['I am not scared of spiders!', 'I am not scared of the dark!'])], ['b', B.t.brave <= 1 ? 'Eek! I am!' : 'Me neither!']], n: B.t.brave <= 1 ? 0.3 : 1 };
   return { lines: [['a', pick(['I do not like spiders.', 'I am scared of the dark.'])], ['b', B.t.brave >= 3 ? 'Do not worry. I will keep you safe!' : 'Me too! Eek!', null, B.t.brave >= 3 ? 'hearts' : null]], n: 1.2 };
 }
+function familyScene(W, a, b) {
+  const wa = wordFor(W, b, a), call = callName(W, b, a), back = callName(W, a, b);
+  const kidToParent = ['mum', 'dad', 'nan', 'grandad', 'aunt', 'uncle'].includes(wa);
+  const lines = kidToParent
+    ? [['a', pick([`I love you, ${call}!`, `${call}, can we go to the park?`, `${call}, I am hungry!`, `Look at me, ${call}!`]), 'yay', 'hearts'], ['b', pick([`I love you too, ${back}!`, 'Ok, my love!', 'You are a star!']), null, 'hearts']]
+    : [['a', pick([`Hello, ${call}!`, `${call}! You are the best.`, `Shall we play, ${call}?`]), 'wave'], ['b', pick([`Hi, ${back}!`, 'Yes please!', 'You are the best too!']), 'yay', 'hearts']];
+  return { lines, n: 0.8 };
+}
 function hugScene(W, a, b) {
   return { lines: [['a', pick(['You are my best friend!', 'I am so happy you are here!']), 'yay', 'hearts'], ['b', pick(['You are my best friend too!', 'Best friends!']), 'yay', 'hearts']], n: 0.5 };
 }
@@ -171,6 +181,7 @@ function pickScene(W, a, b) {
   add(tidyScene, (t.tidy >= 3 && u.tidy <= 2) || (t.tidy <= 1) ? 2 : 0);
   add(braveScene, t.brave >= 3 || t.brave <= 1 ? 1.2 : 0);
   add(hugScene, friendship(W, a, b) >= 6 ? 4 : 0);
+  add(familyScene, wordFor(W, b, a) ? 5 : 0);
   let r = Math.random() * opts.reduce((s, o) => s + o[1], 0);
   for (const [f, w] of opts) { r -= w; if (r <= 0) return f; }
   return chatScene;

@@ -8,6 +8,7 @@ import { buildHouse, houseLook, houseRooms, entryRoom, makePlan, HOUSE_TYPES } f
 import { HouseIcon } from './builder.jsx';
 import { PLACES, ORDER, freePlot, plotGeo, growTown } from './town.jsx';
 import { helloLine, personaOf, randomTraits, randomLikes, TraitPicker } from './personality.jsx';
+import { relWords, relsFrom, FAMILY } from './relations.js';
 
 export const CALLIE_FAM = ['callie', 'chloe', 'mum', 'dad', 'connor'];
 const HOME_ROOMS = ['living', 'kitchen', 'middle', 'garden', 'downhall'];
@@ -161,6 +162,16 @@ export function CreatorPanel({ W, T, onMake, onClose, edit, first }) {
     : { name: '', body: 'kid', skin: pick(SKINS), hair: pick(['pony', 'long', 'short', 'curly']), hairCol: pick(HAIR_COLS.slice(0, 5)), glasses: false, beard: false, voice: 'high', top: pick(['tee', 'dress', 'hoodie']), color: pick(BRIGHT), traits: randomTraits(), likes: randomLikes() });
   const [home, setHome] = useState(old ? old.fam : freePlot(W) != null || first ? 'new' : W.fresh ? (Object.keys(W.folk.fams)[0] || 'new') : 'home');
   const [house, setHouse] = useState('terrace');
+  const [rels, setRels] = useState(() => (old ? relsFrom(W, edit) : {}));
+  const [relWho, setRelWho] = useState(null);
+  const others = [...(W.fresh ? [] : CALLIE_FAM), ...Object.keys(W.folk.people)].filter(k => k !== edit && NAMES[k] && W.people[k]);
+  const famOfPerson = k => (CALLIE_FAM.includes(k) ? 'home' : (W.folk.people[k] || {}).fam);
+  const pickRel = (k, w) => {
+    setRels(r => { const n = { ...r }; if (n[k] === w) delete n[k]; else n[k] = w; return n; });
+    speak(`${prettyName(d.name) || 'They'} ${w === rels[k] ? 'is not' : 'is'} ${NAMES[k]}'s ${w}.`, 'narrator'); SFX.pop();
+    if (FAMILY.has(w) && rels[k] !== w && famOfPerson(k)) setHome(famOfPerson(k));
+    setRelWho(null);
+  };
   const set = (k, v, word) => { setD(o => ({ ...o, [k]: v })); if (word) speak(word, 'word'); SFX.pop(); };
   const name = prettyName(d.name);
   const outfit = { top: d.top, color: d.color, pattern: 'plain', legs: d.body === 'kid' || d.body === 'teen' ? '#9b7cc4' : '#4f6d8f', bottom: 'jeans', shoes: '#fbf8f2', acc: 'none' };
@@ -192,13 +203,18 @@ export function CreatorPanel({ W, T, onMake, onClose, edit, first }) {
         </div></div>
         <div className="opt-row"><h3>Clothes</h3><div className="choices">{TOPS.map(t => <button key={t} className="tile word-tile" aria-pressed={d.top === t} onClick={() => set('top', t, t === 'tee' ? 'T-shirt' : t === 'flannel' ? 'shirt' : t)}>{t === 'tee' ? 'T-shirt' : t === 'flannel' ? 'shirt' : t}</button>)}</div>{sw('color', BRIGHT)}</div>
         <div className="opt-row"><h3>Personality</h3><TraitPicker t={d.traits} likes={d.likes} who={name} onT={t => setD(o => ({ ...o, traits: t }))} onLikes={l => setD(o => ({ ...o, likes: l }))} /></div>
+        {others.length > 0 && <div className="opt-row"><h3>Family &amp; friends</h3>
+          <div className="rel-heads">{others.map(k => <button key={k} className={'rel-head' + (rels[k] ? ' on' : '') + (relWho === k ? ' open' : '')} onClick={() => { setRelWho(relWho === k ? null : k); speak(NAMES[k], 'word'); }}><HeadIcon who={k} o={DEFAULT_OUTFITS[k]} size={36} /><small>{NAMES[k]}</small>{rels[k] && <b>{rels[k]}</b>}</button>)}</div>
+          {relWho && <div className="rel-pick"><span className="rel-q">{name || 'New'} is {NAMES[relWho]}'s...</span>{relWords(d.body).map(w => <button key={w} className="tile word-tile small" aria-pressed={rels[relWho] === w} onClick={() => pickRel(relWho, w)}>{w}</button>)}</div>}
+          {Object.entries(rels).filter(([k, w]) => FAMILY.has(w)).slice(0, 1).map(([k]) => <small key={k} className="note">{name || 'They'} will live with {NAMES[k]}.</small>)}
+        </div>}
         <div className="opt-row"><h3>Home</h3><div className="choices">
           <button className="tile word-tile" disabled={freePlot(W) == null} aria-pressed={home === 'new'} onClick={() => { setHome('new'); speak('A new house!', 'narrator'); }}>new house</button>
           {!W.fresh && <button className="tile word-tile" aria-pressed={home === 'home'} onClick={() => { setHome('home'); speak("Callie's house", 'narrator'); }}>Callie's house</button>}
           {!first && fams.map(f => <button key={f.id} className="tile word-tile fam-tile" aria-pressed={home === f.id} onClick={() => { setHome(f.id); speak(`${f.name}'s house`, 'narrator'); }}><span className="fam-heads">{f.members.slice(0, 3).map(m => <HeadIcon key={m} who={m} o={DEFAULT_OUTFITS[m]} size={22} />)}</span>{f.name}'s</button>)}
         </div>{freePlot(W) == null && <small className="note">The town is full, so pick a family to join.</small>}
         {home === 'new' && <div className="type-row">{Object.entries(HOUSE_TYPES).map(([k, t]) => <button key={k} className="type-tile" aria-pressed={house === k} onClick={() => { setHouse(k); speak(t.name, 'word'); SFX.pop(); }}><HouseIcon type={k} size={54} /><b>{t.name}</b><small>{t.note}</small></button>)}</div>}</div>
-        <button className="done make-go" disabled={!name} onClick={() => onMake({ ...d, name, house, outfit: outfitFor(d.body, d.top, d.color) }, home)}>{!name ? 'Type a name first' : old ? `Save ${name}!` : `Make ${name}!`}</button>
+        <button className="done make-go" disabled={!name} onClick={() => onMake({ ...d, name, house, rels, outfit: outfitFor(d.body, d.top, d.color) }, home)}>{!name ? 'Type a name first' : old ? `Save ${name}!` : `Make ${name}!`}</button>
       </div>
     </div>
   </div>;

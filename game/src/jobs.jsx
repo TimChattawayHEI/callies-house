@@ -12,6 +12,7 @@ import { LIGHT_ROOMS, isLit } from './sky.jsx';
 import { GROC } from './places.jsx';
 import { errandTodo } from './errands.js';
 import { petTodos } from './pets.jsx';
+import { tjTodo } from './townjobs.jsx';
 
 // Stickers. title: short words she can read. joke: the bit for whoever is reading with her. how: a tip if she has not got it yet.
 export const STICKERS = [
@@ -62,6 +63,11 @@ export const STICKERS = [
   { id: 'animals', icon: 'butterfly', title: 'Animal friend', joke: 'A butterfly, a bird and a cat. Who is next? A giraffe?', how: 'Go outside and tap a butterfly, a bird and a cat.', count: W => [['butterfly', 'bird', 'cat'].filter(k => (W.met || {})[k]).length, 3] },
   { id: 'post', icon: 'letter', title: 'Post reader', joke: 'Three letters read all by herself!', how: 'When the post comes, read the letter on the mat.', count: W => [W.lettersRead || 0, 3] },
   { id: 'visitor', icon: 'cake', title: 'Play date', joke: 'A friend came round to play. Put the kettle on!', how: 'Make a friend in Families. One day they will knock on the door.' },
+  { id: 'townhelper', icon: 'star', title: 'Town helper', joke: 'Five jobs for the town! Everyone knows your name now.', how: 'In your own world, do 5 jobs for people.', count: W => [(W.tj && W.tj.n) || 0, 5] },
+  { id: 'townhero', icon: 'star', title: 'Town hero', joke: 'Twenty jobs! They are going to build you a statue.', how: 'In your own world, do 20 jobs for people.', count: W => [(W.tj && W.tj.n) || 0, 20] },
+  { id: 'shopshift', icon: 'shopping', title: 'Shop helper', joke: 'You served the customers. The till goes ding!', how: 'In one of your shops, tap the counter and help in the shop.' },
+  { id: 'party', icon: 'cake', title: 'Party time', joke: 'Happy birthday to you! Cake for everyone.', how: 'When someone has a birthday, give them a present.' },
+  { id: 'lucky', icon: 'coin', title: 'Lucky coin', joke: 'A shiny coin on the ground. Finders keepers!', how: 'In your own world, look for a shiny coin in town.' },
   { id: 'myshop', icon: 'shopping', title: 'Shopkeeper', joke: 'Your very own shop! Open all hours.', how: 'Open the town map, tap Build and make a shop.' },
   { id: 'highstreet', icon: 'shopping', title: 'High street', joke: 'Five shops! Callie is basically the mayor now.', how: 'Build 5 shops in town.', count: W => [Object.keys((W.town && W.town.shops) || {}).length, 5] },
   { id: 'visitshop', icon: 'star', title: 'Open for business', joke: 'Your first customer was you. Good start.', how: 'Go inside a shop you built.' },
@@ -133,8 +139,9 @@ export function todos(W) {
   if (isChristmas(W) && W.xm && W.xm.stage === 'decorated' && !W.xm.tree) list.push({ id: 'tree', icon: 'tree', text: 'Decorate the tree', tip: 'The tree is in the living room. Tap it!' });
   const job = errandTodo(W, whereIs);
   if (job) list.push(job);
+  for (const t of tjTodo(W)) list.push(t);
   for (const t of petTodos(W)) list.push(t);
-  if (W.letter && !W.out) list.push({ id: 'letter', icon: 'letter', text: 'Read the letter', tip: 'It is on the mat by the front door.' });
+  if (W.letter && (!W.out || W.fresh)) list.push({ id: 'letter', icon: 'letter', text: 'Read the letter', tip: W.fresh ? 'It is on the mat inside your front door.' : 'It is on the mat by the front door.' });
   const target = !W.fresh && HUNT_ORDER[W.hunt.idx];
   if (target) list.push({ id: 'hunt', icon: target, text: `Find the ${target}`, count: `${W.hunt.idx + 1}/${HUNT_ORDER.length}`, tip: whereIs(W, W.items.find(i => i.kind === target)) || 'Look all round the house!' });
   return list;

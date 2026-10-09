@@ -249,6 +249,23 @@ button:focus-visible { outline: 3px solid var(--pink); outline-offset: 3px; }
 .jobs-btn.glow { animation: glow2 .6s ease-in-out infinite alternate; }
 @keyframes glow2 { to { box-shadow: 0 3px 0 #c9a16a, 0 0 0 6px rgba(255, 212, 94, .7); } }
 .sheet.jobs { width: min(620px, calc(100% - 24px)); }
+/* relationships, shifts */
+.rel-heads { display: flex; flex-wrap: wrap; gap: 6px; }
+.rel-head { display: flex; flex-direction: column; align-items: center; gap: 0; background: #fff; border: 2px solid #efe2d0; border-radius: 14px; padding: 4px 6px; cursor: pointer; min-width: 62px; color: var(--ink, #3b2a24); }
+.rel-head small { font: 700 13px var(--read); } .rel-head b { font: 800 13px var(--read); color: #c2456f; }
+.rel-head.on { border-color: #e86a92; background: #fff2f6; } .rel-head.open { box-shadow: 0 0 0 3px #ffd0e0; }
+.rel-pick { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; background: #fff8ef; border-radius: 14px; padding: 8px; }
+.rel-q { font: 800 17px var(--read); width: 100%; }
+.tb-work { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.sheet.tj-shift { width: min(640px, calc(100% - 24px)); }
+.shift-n { font: 800 18px var(--display); margin-left: auto; }
+.shift-body { display: flex; align-items: center; gap: 14px; }
+.customer { display: flex; flex-direction: column; align-items: center; flex: none; } .customer small { font: 700 14px var(--read); }
+.shift-ask { position: relative; flex: 1; background: #fff; border: 3px solid var(--ink, #3b2a24); border-radius: 22px; padding: 12px 16px; font: 800 24px var(--read); color: var(--ink, #3b2a24); text-align: left; cursor: pointer; }
+.shift-ask.ok { border-color: #2f8a76; color: #2f8a76; } .shift-ask.no { border-color: #e0524a; color: #c4433c; }
+.shift-q { margin: 0; font: 700 17px var(--read); opacity: .75; }
+.food-tile.right { border-color: #2f8a76; background: #e6f5ef; }
+@media (max-width: 520px) { .shift-ask { font-size: 19px; } .customer svg, .customer .head-icon { width: 64px; height: 64px; } }
 /* worlds */
 .worlds-back, .first-run { position: fixed; inset: 0; z-index: 20; background: radial-gradient(circle at 50% 30%, #fff6ea, #efe2d0 70%); }
 .first-run .sheet { z-index: 21; }
