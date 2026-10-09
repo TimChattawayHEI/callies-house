@@ -14,6 +14,7 @@ import { db, listen, encKey, decKey } from './net.js';
 import { say } from './world.js';
 import { registerPerson, registerFamily, placeAtHome } from './folk.jsx';
 import { registerShop } from './townbuild.jsx';
+import { registerSpecial } from './town.jsx';
 import { growTown } from './town.jsx';
 import { netAdoptPet } from './pets.jsx';
 import { NAMES } from './people.jsx';
@@ -62,7 +63,7 @@ export function collect(W, N, side, hooks) {
   }
   if (W.town) {
     for (const [id, sh] of Object.entries(W.town.shops)) out['ts~' + id] = { ...sh, till: Math.floor(sh.till || 0) };
-    out.tm = { n: W.town.n || 0, rows: W.town.rows || 1 };
+    out.tm = { n: W.town.n || 0, rows: W.town.rows || 1, specials: W.town.specials || {} };
   }
   for (const p of W.pets || []) {
     if (side === 'h') out['pp~' + p.id] = { r: p.room || null, x: r2(p.x), y: r2(p.y), fl: p.flip ? 1 : 0, w: p.walking ? 1 : 0, path: p.path ? p.path.map(pt) : null };
@@ -141,7 +142,7 @@ export function applyEntity(W, N, side, key, v, hooks) {
     case 'fp~': if (v) { W.folk.people[raw] = v; registerPerson(v); if (!W.people[raw]) placeAtHome(W, raw); N.grew = true; } return;
     case 'fm': if (v) { W.folk.n = Math.max(W.folk.n || 0, v.n || 0); W.folk.creative = !!v.creative; W.folk.rels = v.rels || []; } return;
     case 'ts~': if (v) { const old = W.town.shops[raw]; W.town.shops[raw] = { ...v, till: old && Math.floor(old.till || 0) === v.till ? old.till : v.till }; registerShop(W.town.shops[raw]); N.grew = true; } return;
-    case 'tm': if (v) { W.town.n = Math.max(W.town.n || 0, v.n || 0); W.town.rows = Math.max(W.town.rows || 1, v.rows || 1); } return;
+    case 'tm': if (v) { W.town.n = Math.max(W.town.n || 0, v.n || 0); W.town.rows = Math.max(W.town.rows || 1, v.rows || 1); const sp = v.specials || {}; if (JSON.stringify(sp) !== JSON.stringify(W.town.specials || {})) { W.town.specials = { ...sp }; for (const id of Object.keys(sp)) registerSpecial(W, id); N.grew = true; } } return;
     case 'pc~': if (v) { const p = (W.pets || []).find(x => x.id === raw); if (p) { p.hunger = v.hunger; p.walk = v.walk; p.with = v.with; } else netAdoptPet(W, v); } return;
     case 'pp~': if (v) { const p = (W.pets || []).find(x => x.id === raw); if (p) { if (p.room !== v.r || Math.hypot(p.x - v.x, p.y - v.y) > 2) { p.x = v.x; p.y = v.y; } p.room = v.r; p._tx = v.x; p._ty = v.y; p.flip = !!v.fl; p.walking = !!v.w; } } return;
     case 'pm': if (v) { W.petDirt = v.dirt || {}; W.petMess = v.mess || []; W.petStats = v.stats || W.petStats; } return;

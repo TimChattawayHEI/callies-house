@@ -26,7 +26,23 @@ export function plotUse(W) {
   const m = {};
   for (const f of Object.values((W.folk && W.folk.fams) || {})) if (f.plot != null) m[f.plot] = { kind: 'house', id: f.id };
   for (const sh of Object.values((W.town && W.town.shops) || {})) m[sh.plot] = { kind: 'shop', id: sh.id };
+  for (const [id, sp] of Object.entries((W.town && W.town.specials) || {})) m[sp.plot] = { kind: 'special', id };
   return m;
+}
+// Special places that unlock as more people come to live in town
+export const SPECIALS = [
+  { id: 'funfair', name: 'Funfair', need: 3, cost: 60, says: 'Rides and games to play with your friends.' },
+  { id: 'hall', name: 'Concert hall', need: 5, cost: 80, says: 'A big stage for shows.' },
+  { id: 'flats', name: 'Apartment block', need: 7, cost: 100, says: 'Homes for lots of people.' },
+];
+export const townPeople = W => Object.keys((W.folk && W.folk.people) || {}).length;
+export const isUnlocked = (W, s) => townPeople(W) >= s.need;
+export const hasSpecial = (W, id) => (id === 'flats' ? Object.values((W.folk && W.folk.fams) || {}).some(f => f.apt) : !!(W.town && W.town.specials && W.town.specials[id]));
+export function registerSpecial(W, id) {
+  const sp = W.town.specials[id], S = SPECIALS.find(x => x.id === id); if (!sp || !S) return;
+  const g = plotGeo(sp.plot);
+  PLACES['x:' + id] = { word: S.name, say: `the ${S.name.toLowerCase()}`, door: g.door, road: g.road, pin: [g.pin[0], g.pin[1], 3.4], special: id, street: true };
+  if (!ORDER.includes('x:' + id)) ORDER.push('x:' + id);
 }
 // a new street opens when every plot on the streets so far is taken
 export function growTown(W) {
@@ -87,7 +103,7 @@ function StreetSign({ r }) {
 // a family's house, wherever its plot is
 export function MapHouse({ f, L }) {
   const type = f.plan ? f.plan.type : 'house', x = 2.0;
-  const art = type !== 'house' ? <StreetHouse x={x} type={type} L={L} /> : <HouseArt x={x} L={L} />;
+  const art = f.apt ? <ApartmentArt x={x} L={L} /> : type !== 'house' ? <StreetHouse x={x} type={type} L={L} /> : <HouseArt x={x} L={L} />;
   return <g data-loc={'h:' + f.id} style={{ cursor: 'pointer' }} transform={shiftTo(x, f.plot)}>
     <FloorPlane z={0.006} x={x - 0.2} y={11.6}><rect width={170} height={160} fill="#7aa84e" /><rect x={65} y={0} width={36} height={40} fill="#c9c6bc" /></FloorPlane>
     {art}
@@ -168,11 +184,46 @@ function MapPets() {
   </g>;
 }
 
+// The funfair and the concert hall on the map
+export function SpecialArt({ id, x, y, T = 0 }) {
+  if (id === 'funfair') {
+    const c = P(x + 0.7, y + 0.7, 1.55), r = 70, rot = T * 20;
+    return <g>
+      <FloorPlane z={0.006} x={x - 0.1} y={y - 0.15}><rect width={220} height={190} rx={10} fill="#9ad06a" /></FloorPlane>
+      <Box x={x + 1.25} y={y + 0.5} w={0.75} d={0.75} h={0.55} c={['#fbf8f2', '#e23b3b', '#c42f2f']} />
+      <polygon points={ipts([[x + 1.2, y + 0.45, 0.55], [x + 2.05, y + 0.45, 0.55], [x + 1.62, y + 0.87, 1.05]])} fill="#e23b3b" />
+      <polygon points={ipts([[x + 2.05, y + 0.45, 0.55], [x + 2.05, y + 1.3, 0.55], [x + 1.62, y + 0.87, 1.05]])} fill="#fbf8f2" />
+      <line x1={c[0] - 34} y1={c[1] + 92} x2={c[0]} y2={c[1]} stroke="#5b5f66" strokeWidth={6} /><line x1={c[0] + 34} y1={c[1] + 92} x2={c[0]} y2={c[1]} stroke="#5b5f66" strokeWidth={6} />
+      <circle cx={c[0]} cy={c[1]} r={r} fill="none" stroke="#e86a92" strokeWidth={6} />
+      {Array.from({ length: 8 }, (_, i) => { const a = (i * 45 + rot) * Math.PI / 180, px = c[0] + Math.cos(a) * r, py = c[1] + Math.sin(a) * r; return <g key={i}><line x1={c[0]} y1={c[1]} x2={px} y2={py} stroke="#f6a9c3" strokeWidth={3} /><rect x={px - 9} y={py} width={18} height={14} rx={4} fill={['#ffd45e', '#5b9bd5', '#7cc9a8', '#e23b3b'][i % 4]} /></g>; })}
+      <circle cx={c[0]} cy={c[1]} r={9} fill="#ffd45e" />
+    </g>;
+  }
+  if (id === 'hall') return <g>
+    <FloorPlane z={0.006} x={x - 0.1} y={y - 0.15}><rect width={220} height={190} rx={10} fill="#9ad06a" /><rect x={80} y={120} width={60} height={70} fill="#c9c6bc" /></FloorPlane>
+    <Box x={x + 0.15} y={y + 0.1} w={1.75} d={1.3} h={1.5} c={['#efe6f7', '#ddd0ea', '#c9b8dc']} />
+    <polygon points={ipts([[x + 0.1, y + 1.42, 1.5], [x + 1.95, y + 1.42, 1.5], [x + 1.02, y + 1.42, 2.05]])} fill="#7a4fd1" />
+    <FaceY y={y + 1.4} x0={x + 0.15} z1={1.5}><rect x={0} y={6} width={175} height={26} fill="#7a4fd1" /><text x={87} y={26} textAnchor="middle" fontSize={17} fontWeight="800" fill="#fbf8f2" fontFamily="'Baloo 2', sans-serif">CONCERT HALL</text>
+      {[16, 52, 108, 144].map(cx => <rect key={cx} x={cx} y={40} width={14} height={108} fill="#fbf8f2" />)}<rect x={72} y={74} width={32} height={76} fill="#c4304f" /><text x={88} y={66} textAnchor="middle" fontSize={22} fill="#ffd45e">♫</text></FaceY>
+  </g>;
+  return null;
+}
+export function ApartmentArt({ x, L }) {
+  const win = (x0, z) => <rect key={x0 + ':' + z} x={x0} y={z} width={22} height={22} fill="#bcdcea" stroke="#fbf8f2" strokeWidth={3} />;
+  return <g>
+    <Box x={x - 0.1} y={11.9} w={1.5} d={1.1} h={3.2} c={['#e9e0d2', '#ddd2c2', '#cfc2b0']} />
+    <Box x={x - 0.15} y={11.85} z={3.2} w={1.6} d={1.2} h={0.12} c={['#8a8f96', '#7a7f86', '#6a6f76']} />
+    <FaceY y={13.0} x0={x - 0.1} z1={3.2}><rect x={0} y={4} width={150} height={24} fill="#2f7f86" /><text x={75} y={22} textAnchor="middle" fontSize={16} fontWeight="800" fill="#fbf8f2" fontFamily="'Baloo 2', sans-serif">FLATS</text>
+      {[40, 90, 140, 190, 240].map(z => [10, 64, 118].map(x0 => win(x0, z)))}<rect x={60} y={278} width={30} height={42} fill={L.door} /></FaceY>
+  </g>;
+}
+
 // Everything on the plots: New Street, the new streets, houses, shops and empty plots.
 function MapPlots({ W, fams, building, sel, shops }) {
   const shown = shownRows(W, building), used = plotUse(W), byId = Object.fromEntries(fams.map(f => [f.id, f]));
   const thing = k => { const u = used[k]; if (!u) return null;
     if (u.kind === 'house') { const f = byId[u.id]; return f ? <MapHouse key={'h' + k} f={f} L={f.look} /> : null; }
+    if (u.kind === 'special') { const g = plotGeo(k); return <g key={'x' + k} data-loc={'x:' + u.id} style={{ cursor: 'pointer' }}><SpecialArt id={u.id} x={g.x} y={g.y} T={performance.now() / 1000} /></g>; }
     const sh = shops[u.id], g = plotGeo(k); if (!sh || !TB) return null;
     return <g key={'s' + k} data-loc={'s:' + sh.id} style={{ cursor: 'pointer' }}><TB.ShopBuilding shop={sh.type} name={sh.name} sign={sh.sign} x={g.x} y={g.y} /></g>; };
   return <g>

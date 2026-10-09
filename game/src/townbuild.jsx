@@ -5,7 +5,7 @@ import { pick, SFX, speak } from './core.js';
 import { TB, NPC, Iso } from '../rooms.gen.jsx';
 import { ROOMS, WORDS } from './rooms.jsx';
 import { buildHouse, hx } from './homes.jsx';
-import { PLACES, ORDER, plotGeo, plotUse, growTown, isRowPlot } from './town.jsx';
+import { PLACES, ORDER, plotGeo, plotUse, growTown, isRowPlot, SPECIALS, isUnlocked, hasSpecial, townPeople, registerSpecial } from './town.jsx';
 import { placeFamily } from './folk.jsx';
 import { ItemIcon } from './items.jsx';
 
@@ -19,7 +19,9 @@ export const SIGN_COLS = ['#e0524a', '#c4622a', '#e3b04f', '#3f8a5a', '#2f8a76',
 export function initTown(W, saved) {
   W.town = (saved && saved.town) || { shops: {}, n: 0, rows: 1 };
   if (!W.town.rows) W.town.rows = 1;
+  if (!W.town.specials) W.town.specials = {};
   for (const sh of Object.values(W.town.shops)) registerShop(sh);
+  for (const id of Object.keys(W.town.specials)) registerSpecial(W, id);
 }
 export const shopRoom = sh => sh.id + ':shop';
 export const shopPlace = sh => 's:' + sh.id;
@@ -131,17 +133,20 @@ export function keeperLines(sh) {
 const Coin = ({ s = 18 }) => <i className="coin" style={{ width: s, height: s }} />;
 export function ShopArt({ type, name, sign, h = 120 }) { return <div className="shop-art" style={{ height: h }}><TB.TBShopArt shop={type} name={name} sign={sign} /></div>; }
 // 1: pick what kind of shop
-export function ShopPickPanel({ W, plot, start, onNext, onClose }) {
-  const [cat, setCat] = useState(start ? BY[start].cat : CATS[0]);
+export function ShopPickPanel({ W, plot, start, onNext, onSpecial, onClose }) {
+  const [cat, setCat] = useState(start ? BY[start].cat : onSpecial && SPECIALS.some(s => isUnlocked(W, s) && !hasSpecial(W, s.id)) ? 'Special' : CATS[0]);
   const [sel, setSel] = useState(start || null);
-  const it = sel && BY[sel];
+  const it = sel && BY[sel], sp = sel && sel.startsWith('x:') && SPECIALS.find(x => 'x:' + x.id === sel);
   return <div className="sheet tb-pick" role="dialog" aria-label="Build a shop" onPointerDown={e => e.stopPropagation()}>
     <div className="box-head"><button className="room-chip" onClick={() => speak('Build a shop. What will it sell?', 'narrator')}>Build a shop</button><span className="coins-pill"><i />{W.coins}</span><button className="pill" onClick={onClose}>Close</button></div>
-    <div className="pet-tabs">{CATS.map(c => <button key={c} className={'pill' + (c === cat ? ' on' : '')} aria-pressed={c === cat} onClick={() => { setCat(c); speak(c, 'word'); SFX.click(); }}>{CAT_SHORT[c]}</button>)}</div>
-    <div className="tb-grid">{SHOPS.filter(s => s.cat === cat).map(s => <button key={s.id} className="tb-card" aria-pressed={sel === s.id} onClick={() => { setSel(s.id); speak(`${s.type}. ${s.sells}.`, 'narrator'); SFX.pop(); }}>
-      <ShopArt type={s.id} h={86} /><b>{s.type}</b><small>{s.sells}</small><span className="pet-price"><i />{s.cost}</span></button>)}</div>
-    <div className="tb-foot">{it ? <button className="tb-says" onClick={() => speak(`${it.type}. It sells ${it.sells}.`, 'narrator')}><b>{it.type}</b> sells {it.sells.toLowerCase()}</button> : <span className="tb-says">Tap a shop to see it.</span>}
-      <button className="done" disabled={!it} onClick={() => onNext(sel)}>Next: name it</button></div>
+    <div className="pet-tabs">{onSpecial && <button className={'pill special-tab' + (cat === 'Special' ? ' on' : '')} aria-pressed={cat === 'Special'} onClick={() => { setCat('Special'); speak('Special places', 'word'); SFX.click(); }}>Special</button>}{CATS.map(c => <button key={c} className={'pill' + (c === cat ? ' on' : '')} aria-pressed={c === cat} onClick={() => { setCat(c); speak(c, 'word'); SFX.click(); }}>{CAT_SHORT[c]}</button>)}</div>
+    {cat === 'Special' ? <div className="tb-grid">{SPECIALS.map(s => { const open = isUnlocked(W, s), built = hasSpecial(W, s.id); return <button key={s.id} className={'tb-card special' + (open && !built ? '' : ' locked')} aria-pressed={sel === 'x:' + s.id} onClick={() => { if (built) { speak(`You already have the ${s.name.toLowerCase()}.`, 'narrator'); return; } if (!open) { speak(`The ${s.name.toLowerCase()} needs ${s.need} people in town. You have ${townPeople(W)}.`, 'narrator'); SFX.click(); return; } setSel('x:' + s.id); speak(`${s.name}. ${s.says}`, 'narrator'); SFX.pop(); }}>
+      <svg viewBox="-110 -150 220 200" width="110" height="96" aria-hidden="true">{s.id === 'funfair' ? <g><circle r={60} cy={-60} fill="none" stroke="#e86a92" strokeWidth={8} />{[0, 1, 2, 3, 4, 5].map(i => <line key={i} x1={0} y1={-60} x2={Math.cos(i) * 60} y2={-60 + Math.sin(i) * 60} stroke="#f6a9c3" strokeWidth={4} />)}<path d="M-30,40 L0,-60 30,40" stroke="#5b5f66" strokeWidth={8} fill="none" /></g> : s.id === 'hall' ? <g><rect x={-80} y={-70} width={160} height={110} fill="#ddd0ea" /><path d="M-90,-70 L0,-120 90,-70z" fill="#7a4fd1" />{[-60, -30, 30, 60].map(x => <rect key={x} x={x - 6} y={-60} width={12} height={100} fill="#fff" />)}</g> : <g><rect x={-55} y={-140} width={110} height={180} fill="#e9e0d2" />{[-110, -70, -30, 10].map(y => [-40, -10, 20].map(x => <rect key={x + ':' + y} x={x} y={y} width={20} height={20} fill="#bcdcea" />))}</g>}</svg>
+      <b>{s.name}</b><small>{built ? 'Built!' : open ? s.says : `Needs ${s.need} people (you have ${townPeople(W)})`}</small>{open && !built && <span className="pet-price"><i />{s.cost}</span>}</button>; })}</div>
+    : <div className="tb-grid">{SHOPS.filter(s => s.cat === cat).map(s => <button key={s.id} className="tb-card" aria-pressed={sel === s.id} onClick={() => { setSel(s.id); speak(`${s.type}. ${s.sells}.`, 'narrator'); SFX.pop(); }}>
+      <ShopArt type={s.id} h={86} /><b>{s.type}</b><small>{s.sells}</small><span className="pet-price"><i />{s.cost}</span></button>)}</div>}
+    <div className="tb-foot">{sp ? <button className="tb-says" onClick={() => speak(`${sp.name}. ${sp.says}`, 'narrator')}><b>{sp.name}</b> {sp.says.toLowerCase()}</button> : it ? <button className="tb-says" onClick={() => speak(`${it.type}. It sells ${it.sells}.`, 'narrator')}><b>{it.type}</b> sells {it.sells.toLowerCase()}</button> : <span className="tb-says">Tap a shop to see it.</span>}
+      {sp ? <button className="done" disabled={W.coins < sp.cost} onClick={() => onSpecial(sp.id)}>{W.coins < sp.cost ? `Needs ${sp.cost} coins` : `Build the ${sp.name.toLowerCase()}!`}</button> : <button className="done" disabled={!it} onClick={() => onNext(sel)}>Next: name it</button>}</div>
   </div>;
 }
 // 2: give it a name and a sign colour, then open it

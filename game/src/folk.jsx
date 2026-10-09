@@ -63,7 +63,7 @@ export function registerFamily(fam) {
 // where the house is on the map (also used after moving it)
 export function placeFamily(fam) {
   const g = plotGeo(fam.plot);
-  PLACES['h:' + fam.id] = { word: fam.name, say: `${fam.name}'s house`, door: g.door, road: g.road, pin: g.pin, room: entryRoom(fam), street: true, fam: fam.id };
+  PLACES['h:' + fam.id] = { word: fam.name, say: fam.apt ? 'the flats' : `${fam.name}'s house`, door: g.door, road: g.road, pin: g.pin, room: entryRoom(fam), street: true, fam: fam.id };
 }
 export function initFolk(W, saved) {
   W.folk = (saved && saved.folk) || { n: 0, people: {}, fams: {} };
