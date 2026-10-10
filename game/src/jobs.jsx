@@ -50,7 +50,7 @@ export const STICKERS = [
   { id: 'special', icon: 'star', title: 'Big build', joke: 'Something special is open in town!', how: 'Build the funfair, the concert hall or the flats.' },
   { id: 'gift', icon: 'star', title: 'A present', joke: 'Someone made you a present. How kind!', how: 'Open a present someone made for you.' },
   { id: 'dreams', icon: 'star', title: 'Sweet dreams', joke: 'Shh! Someone is dreaming...', how: 'At night, peek at someone dreaming.' },
-  { id: 'visitor', icon: 'star', title: 'A visitor', joke: 'Knock knock! Someone came from far away!', how: 'Have a visitor come from another tablet.' },
+  { id: 'guest', icon: 'star', title: 'A visitor', joke: 'Knock knock! Someone came from far away!', how: 'Have a visitor come from another tablet.' },
   { id: 'traveller', icon: 'star', title: 'Off on a trip', joke: 'Pack your bags! Off to see the world!', how: 'Send someone to visit another tablet. Grown-ups menu, Visitors.' },
   { id: 'maker', icon: 'star', title: 'New friend', joke: 'Everyone say hello! The street just got bigger.', how: 'Tap Families and make a new person.' },
   { id: 'decor', icon: 'sofa', title: 'Home maker', joke: 'A new thing for the house. It looks great!', how: 'In a New Street house, tap Decorate and buy something.' },
@@ -134,28 +134,30 @@ function whereIs(W, it) {
   return `Look in ${roomName(it.room)}.`;
 }
 // Everything to do right now, most urgent first.
+// stickers that only happen in Callie's House
+export const CALLIE_ONLY = new Set(['controller', 'tablet', 'hunt', 'tidy', 'spider', 'spider5', 'spider10', 'lunch', 'feed', 'hide', 'goal', 'dance', 'stinky', 'lights', 'paint', 'magnet', 'burger', 'sleep', 'pumpkin', 'spooky', 'xmas', 'tree', 'snowman', 'ducks', 'school', 'helper', 'superhelper', 'post', 'visitor']);
 export function todos(W) {
   const list = [];
   if (W.hide && W.hide.phase === 'seek') list.push({ id: 'hide', icon: 'star', text: `Find ${NAMES[W.hide.who]}!`, tip: `${NAMES[W.hide.who]} is hiding in ${roomName(W.hide.spot.room)}.` });
   if (W.room === 'shop' && W.shop && !W.shop.done) { const left = W.shop.list.filter(g => !W.shop.got.includes(g)); list.push({ id: 'shop', icon: 'shopping', text: left.length ? 'Shopping list' : 'Go to the till', tip: left.length ? `We still need ${left.map(g => GROC[g][0]).join(', ')}.` : 'Tap a till to pay.', shop: true }); }
   if (W.room === 'cafe' && W.cafe) list.push({ id: 'cafe', icon: W.cafe.order[0], text: W.cafe.ready ? 'Collect your order' : 'Waiting for your order', tip: W.cafe.ready ? 'Tap COLLECT on the counter.' : 'It will be ready soon.' });
-  for (const [who, q] of Object.entries(W.quests || {})) if (q.state === 'active') { const Q = QUESTS[who], it = W.items.find(i => i.quest === who); list.push({ id: 'q-' + who, icon: Q.kind, text: `Find ${Q.chip}`, tip: (whereIs(W, it) || '') + (who === 'connor' ? ' Then knock on his door.' : ' Then give it to Chloe.') }); }
-  if (isHalloween(W) && W.hw && W.hw.stage === 'asked') list.push({ id: 'spooky', icon: 'spooky', text: 'Get the spooky box', tip: 'It is in the cardboard boxes in the attic. Then give it to Mum.' });
+  if (!W.fresh) for (const [who, q] of Object.entries(W.quests || {})) if (q.state === 'active') { const Q = QUESTS[who], it = W.items.find(i => i.quest === who); list.push({ id: 'q-' + who, icon: Q.kind, text: `Find ${Q.chip}`, tip: (whereIs(W, it) || '') + (who === 'connor' ? ' Then knock on his door.' : ' Then give it to Chloe.') }); }
+  if (!W.fresh && isHalloween(W) && W.hw && W.hw.stage === 'asked') list.push({ id: 'spooky', icon: 'spooky', text: 'Get the spooky box', tip: 'It is in the cardboard boxes in the attic. Then give it to Mum.' });
   if (!W.fresh && isHalloween(W) && W.hw && !W.hw.pumpkin) list.push({ id: 'pumpkin', icon: 'pumpkin', text: 'Carve the pumpkin', tip: 'The pumpkin is in the kitchen, on top of the washing machine.' });
-  if (W.lightAsk && !W.out) { const n = LIGHT_ROOMS.filter(r => isLit(W, r)).length; const dark = LIGHT_ROOMS.filter(r => !isLit(W, r)).map(roomName);
+  if (!W.fresh && W.lightAsk && !W.out) { const n = LIGHT_ROOMS.filter(r => isLit(W, r)).length; const dark = LIGHT_ROOMS.filter(r => !isLit(W, r)).map(roomName);
     list.unshift({ id: 'lights', icon: 'bulb', text: 'Turn the lights on', count: `${n}/${LIGHT_ROOMS.length}`, tip: `Tap the light bulb button. Still dark: ${dark.join(', ')}.` }); }
-  if (W.bedAsk && !W.bedtime && !W.out && W.player === 'callie') list.unshift({ id: 'bed', icon: 'moon', text: 'Go to bed', tip: 'Go to your room, get into bed, then turn off the light.' });
+  if (!W.fresh && W.bedAsk && !W.bedtime && !W.out && W.player === 'callie') list.unshift({ id: 'bed', icon: 'moon', text: 'Go to bed', tip: 'Go to your room, get into bed, then turn off the light.' });
   const A = W.asks;
-  if (A && A.school.state === 'active' && !W.out) {
+  if (!W.fresh && A && A.school.state === 'active' && !W.out) {
     const kid = KIDS.includes(W.player) ? W.player : null;
     if (kid && !W.uniform[kid]) list.push({ id: 'uniform', icon: 'uniform', text: 'Put your uniform on', tip: kid === 'callie' ? 'Open the wardrobe in your room and tap School uniform.' : "Open the wardrobe in Chloe's room and tap School uniform." });
     else list.push({ id: 'school', icon: 'uniform', text: 'Go to school', tip: 'Go to the front door, then tap School on the map.' });
   }
-  if (A && A.ducks.state === 'active') { const br = W.items.find(i => i.kind === 'bread'); const got = br && br.loc.s === 'pack';
+  if (!W.fresh && A && A.ducks.state === 'active') { const br = W.items.find(i => i.kind === 'bread'); const got = br && br.loc.s === 'pack';
     list.push({ id: 'ducks', icon: 'duck', text: got ? 'Feed the ducks' : 'Get some bread', tip: got ? (W.room === 'park' ? 'Tap the ducks on the pond.' : 'Go to the park. Tap the front door, then Park.') : 'Look in the cupboard in the kitchen.' }); }
-  if (isChristmas(W) && W.xm && W.xm.stage === 'asked') list.push({ id: 'xmas', icon: 'xmasbox', text: 'Get the Christmas box', tip: 'It is in the cardboard boxes in the attic. Then give it to Mum.' });
-  if (isChristmas(W) && W.xm && W.xm.stage === 'decorated' && !W.xm.tree) list.push({ id: 'tree', icon: 'tree', text: 'Decorate the tree', tip: 'The tree is in the living room. Tap it!' });
-  const job = errandTodo(W, whereIs);
+  if (!W.fresh && isChristmas(W) && W.xm && W.xm.stage === 'asked') list.push({ id: 'xmas', icon: 'xmasbox', text: 'Get the Christmas box', tip: 'It is in the cardboard boxes in the attic. Then give it to Mum.' });
+  if (!W.fresh && isChristmas(W) && W.xm && W.xm.stage === 'decorated' && !W.xm.tree) list.push({ id: 'tree', icon: 'tree', text: 'Decorate the tree', tip: 'The tree is in the living room. Tap it!' });
+  const job = !W.fresh && errandTodo(W, whereIs);
   if (job) list.push(job);
   for (const t of tjTodo(W)) list.push(t);
   for (const t of petTodos(W)) list.push(t);
@@ -172,7 +174,7 @@ export function JobsPanel({ W, start, onClose }) {
   // ideas: stickers not got yet, skipping ones already on the jobs list
   const covered = new Set(list.map(x => ({ 'q-connor': 'controller', 'q-chloe': 'tablet', uniform: 'school' }[x.id] || x.id)));
   const offSeason = s => (s.how.startsWith('At Christmas') && !isChristmas(W)) || (s.how.startsWith('At Halloween') && !isHalloween(W));
-  const ideas = STICKERS.filter(s => !got[s.id] && !covered.has(s.id) && !offSeason(s)).slice(0, 3);
+  const ideas = STICKERS.filter(s => !got[s.id] && !covered.has(s.id) && !offSeason(s) && !(W.fresh && CALLIE_ONLY.has(s.id))).slice(0, 3);
   const n = STICKERS.filter(s => got[s.id]).length;
   return <div className="sheet jobs" role="dialog" aria-label="Jobs" onPointerDown={e => e.stopPropagation()}>
     <div className="box-head">

@@ -320,18 +320,16 @@ function App() {
     if (W.flags.ladder > 0 && W.flags.ladder < 1) W.flags.ladder = Math.min(1, W.flags.ladder + dt * 2.5);
     if (W.flags.ladder >= 1 && W.room === 'hallway' && c.room === 'hallway' && c.mode !== 'walk' && W.T - (W.ladderT || 0) > 4) W.flags.ladder = 0;
     if (W.guest) { stepRide(); stepTownJobs(W, dt, tjFx); clockStep(W, dt); for (const pt of W.pets || []) if (pt._tx != null) { const k2 = Math.min(1, dt * 8); pt.x += (pt._tx - pt.x) * k2; pt.y += (pt._ty - pt.y) * k2; } W.tidyWas = W.items.filter(isTidy).length; return; }
-    stepQuests(W);
+    const house = !W.fresh; // Callie's House stories (lost things, errands, seasons, post, visits)
+    if (house) stepQuests(W);
     stepCompanion(W);
-    stepGrands(W);
+    if (house) stepGrands(W);
     stepFolk(W);
     stepRide();
-    stepHalloween(W);
-    stepXmas(W);
-    stepAsks(W);
-    stepErrands(W, it => { if (it) { SFX.pop(); wordFx(KINDS[it.kind].word, headAt(c)); } });
+    if (house) { stepHalloween(W); stepXmas(W); stepAsks(W); }
+    if (house) stepErrands(W, it => { if (it) { SFX.pop(); wordFx(KINDS[it.kind].word, headAt(c)); } });
     stepCritters(W, dt);
-    stepPost(W);
-    stepVisit(W, placeAtHome);
+    if (house) { stepPost(W); stepVisit(W, placeAtHome); }
     stepPets(W, dt, petFx);
     stepTownLife(W, {});
     stepTownJobs(W, dt, tjFx);
@@ -344,7 +342,7 @@ function App() {
     stepLove(W);
     stepSocial(W, (kind, id) => { const p = W.people[id]; if (p && p.room === W.room) burst(W, kind, headAt(p), kind === 'hearts' ? {} : { n: 10, spread: 80 }); });
     stepSky(W, dt);
-    stepStink();
+    if (house) stepStink();
     stepHide(W, dt, p => { burst(W, 'confetti', headAt(p)); showToast(`You found ${NAMES[p.id]}!`); });
     stepFootball(W, s => { SFX.cheer(); if (s.kicker === W.player) later(W, 2, () => achieve(W, 'goal')); const k = W.people[s.kicker]; burst(W, 'confetti', P(6.4, 7.0, 1.2)); burst(W, 'word', P(6.4, 7.0, 1.6), { text: 'GOAL!', life: 2 }); if (k && k.room === 'garden') { k.action = { kind: 'cheer', t0: W.T, dur: 1.6 }; say(W, k.id, 'GOAL!'); } });
     // Dad cheers at the football
@@ -1424,7 +1422,7 @@ function App() {
       setOutfits(o => ({ ...o, [def.id]: def.outfit }));
       summon(def.id, W.player); SFX.doorbell();
       later(W, 1, () => { const q = W.people[def.id]; if (q && here(def.id)) { say(W, def.id, `Hello! I am ${def.name}. I came from ${def.visitor.from}!`); q.action = { kind: 'wave', t0: W.T, dur: 1.6 }; } });
-      addNews(W, `${def.name} came to visit from ${def.visitor.from}!`, [def.id], 'visitor'); showToast(`A visitor! ${def.name} came from ${def.visitor.from}.`); later(W, 2, () => achieve(W, 'visitor'));
+      addNews(W, `${def.name} came to visit from ${def.visitor.from}!`, [def.id], 'visitor'); showToast(`A visitor! ${def.name} came from ${def.visitor.from}.`); later(W, 2, () => achieve(W, 'guest'));
     }
   }
   if (window.__DEBUG) window.__checkPost = collectVisitors;

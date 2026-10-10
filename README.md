@@ -58,6 +58,8 @@ Android app so it installs on the Fire tablet, works offline and uses the tablet
 
 Each push to `main` builds a new APK, numbered 1.0.*build*.
 
+- **1.0.23** New worlds no longer show Callie's House jobs, tips or stories (Connor's controller,
+  Chloe's tablet, the spooky box, bread for the ducks, family errands).
 - **1.0.22** Minigames (Pop the word, Picture match, Catch the fruit, Duck race). Special places that
   unlock as the town grows: funfair, concert hall and apartment block. Daily presents, dreams at night,
   and visitors between tablets (postbox codes). Features and patch notes in this README.
